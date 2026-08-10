@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "MARS v2 - Anatomy Learning Platform Monorepo",
+  "engines": {
+    "node": "20.x"
+  },
   "workspaces": [
     "client",
     "server",
