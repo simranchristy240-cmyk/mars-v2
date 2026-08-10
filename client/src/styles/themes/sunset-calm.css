@@ -1,0 +1,82 @@
+/* Sunset Calm Theme (Warm Muted Terracotta & Earth Tones) */
+[data-theme='sunset-calm'] {
+  --bg-primary: #1c1917;
+  --bg-secondary: #292524;
+  --bg-surface: rgba(41, 37, 36, 0.85);
+  --bg-card: #342e2b;
+  --border-color: rgba(255, 243, 224, 0.08);
+  --border-glow: rgba(249, 115, 22, 0.45);
+  --accent-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+
+  --text-primary: #fef3c7;
+  --text-secondary: #d6d3d1;
+  --text-muted: #a8a29e;
+  --on-accent: #ffffff;
+
+  --accent: #f97316;
+  --accent-hover: #ea580c;
+  --accent-light: rgba(249, 115, 22, 0.18);
+
+  --success: #84cc16;
+  --success-light: rgba(132, 204, 22, 0.15);
+  --warning: #eab308;
+  --warning-light: rgba(234, 179, 8, 0.15);
+  --error: #ef4444;
+  --error-light: rgba(239, 68, 68, 0.15);
+
+  --gold: #f59e0b;
+  --streak-fire: #f97316;
+
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 243, 224, 0.08);
+  --card-shadow-hover: 0 14px 38px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 243, 224, 0.12);
+  --divider: rgba(255, 243, 224, 0.1);
+  --track-bg: rgba(255, 243, 224, 0.08);
+  --scrollbar-thumb: rgba(255, 243, 224, 0.18);
+  --logo-glow: 0 4px 20px rgba(249, 115, 22, 0.3);
+
+  --nav-bg: linear-gradient(135deg, rgba(41, 37, 36, 0.92) 0%, rgba(52, 46, 43, 0.94) 50%, rgba(28, 25, 23, 0.92) 100%);
+  --nav-border: rgba(249, 115, 22, 0.28);
+  --nav-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 28px rgba(249, 115, 22, 0.18), inset 0 1px 1px rgba(255, 243, 224, 0.08);
+  --nav-active-bg: rgba(249, 115, 22, 0.16);
+  --nav-active-border: rgba(249, 115, 22, 0.4);
+  --nav-active-shadow: 0 4px 16px rgba(249, 115, 22, 0.22);
+  --nav-active-color: #fb923c;
+  --nav-inactive-color: rgba(168, 162, 158, 0.75);
+
+  --gamification-bg: linear-gradient(135deg, rgba(249, 115, 22, 0.16) 0%, rgba(245, 158, 11, 0.1) 45%, rgba(28, 25, 23, 0.95) 100%);
+  --gamification-border: rgba(245, 158, 11, 0.35);
+  --gamification-ember: #f97316;
+  --gamification-gold: #f59e0b;
+  --gamification-bar: linear-gradient(90deg, #f97316 0%, #f59e0b 100%);
+  --gamification-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 243, 224, 0.08);
+  --streak-icon-bg: rgba(249, 115, 22, 0.18);
+  --streak-icon-border: rgba(249, 115, 22, 0.4);
+  --streak-label: #fb923c;
+  --xp-icon-bg: rgba(245, 158, 11, 0.18);
+  --xp-icon-border: rgba(245, 158, 11, 0.4);
+  --xp-label: #fbbf24;
+  --level-bg: linear-gradient(135deg, rgba(234, 179, 8, 0.16) 0%, rgba(28, 25, 23, 0.9) 100%);
+  --level-border: rgba(234, 179, 8, 0.35);
+  --level-icon: #eab308;
+  --level-label: #fde68a;
+  --level-shadow: 0 8px 24px rgba(234, 179, 8, 0.12);
+  --leaderboard-gold-bg: rgba(245, 158, 11, 0.15);
+
+  --course-enrolled-bg: linear-gradient(135deg, rgba(132, 204, 22, 0.14) 0%, rgba(249, 115, 22, 0.1) 50%, rgba(28, 25, 23, 0.95) 100%);
+  --course-enrolled-border: rgba(132, 204, 22, 0.32);
+  --course-enrolled-glow: #84cc16;
+  --course-emerald: #a3e635;
+  --course-progress-bar: linear-gradient(90deg, #84cc16 0%, #f97316 100%);
+  --course-play-btn: linear-gradient(135deg, #84cc16 0%, #f97316 100%);
+  --course-play-shadow: 0 4px 14px rgba(132, 204, 22, 0.35);
+  --course-enrolled-shadow: 0 14px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 243, 224, 0.08);
+
+  --course-catalog-bg: rgba(52, 46, 43, 0.9);
+  --course-catalog-border: rgba(249, 115, 22, 0.22);
+  --course-catalog-icon-bg: linear-gradient(135deg, rgba(249, 115, 22, 0.22) 0%, rgba(245, 158, 11, 0.15) 100%);
+  --course-catalog-accent: #fb923c;
+  --course-catalog-icon-border: rgba(249, 115, 22, 0.3);
+  --course-catalog-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --price-badge-bg: rgba(132, 204, 22, 0.12);
+  --price-badge-border: rgba(132, 204, 22, 0.3);
+}

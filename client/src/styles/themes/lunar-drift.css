@@ -1,0 +1,87 @@
+/* Lunar Drift Theme (Quiet charcoal void, lunar silver, muted celadon) */
+[data-theme='lunar-drift'] {
+  --bg-primary: #0b0d10;
+  --bg-secondary: #12151a;
+  --bg-surface: rgba(18, 21, 26, 0.82);
+  --bg-card: rgba(22, 26, 32, 0.88);
+  --border-color: rgba(232, 236, 239, 0.08);
+  --border-glow: rgba(126, 184, 168, 0.45);
+  --accent-gradient: linear-gradient(135deg, #7eb8a8 0%, #8aa4b8 100%);
+
+  --text-primary: #e8ecef;
+  --text-secondary: #9aa3ad;
+  --text-muted: #6b7480;
+  --on-accent: #0b0d10;
+
+  --accent: #7eb8a8;
+  --accent-hover: #95c9bb;
+  --accent-light: rgba(126, 184, 168, 0.16);
+
+  --success: #6fbf9a;
+  --success-light: rgba(111, 191, 154, 0.15);
+  --warning: #d4a574;
+  --warning-light: rgba(212, 165, 116, 0.15);
+  --error: #e07a7a;
+  --error-light: rgba(224, 122, 122, 0.15);
+
+  --gold: #d4b96a;
+  --streak-fire: #c98a6a;
+
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --card-shadow-hover: 0 14px 38px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --divider: rgba(232, 236, 239, 0.1);
+  --track-bg: rgba(232, 236, 239, 0.08);
+  --scrollbar-thumb: rgba(232, 236, 239, 0.18);
+  --logo-glow: 0 4px 20px rgba(126, 184, 168, 0.35);
+
+  --nav-bg: linear-gradient(135deg, rgba(18, 21, 26, 0.92) 0%, rgba(22, 28, 32, 0.94) 50%, rgba(12, 14, 18, 0.92) 100%);
+  --nav-border: rgba(126, 184, 168, 0.28);
+  --nav-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 28px rgba(126, 184, 168, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  --nav-active-bg: rgba(126, 184, 168, 0.16);
+  --nav-active-border: rgba(126, 184, 168, 0.4);
+  --nav-active-shadow: 0 4px 16px rgba(126, 184, 168, 0.22);
+  --nav-active-color: #95c9bb;
+  --nav-inactive-color: rgba(154, 163, 173, 0.75);
+
+  --gamification-bg: linear-gradient(135deg, rgba(201, 138, 106, 0.14) 0%, rgba(126, 184, 168, 0.12) 45%, rgba(14, 16, 20, 0.95) 100%);
+  --gamification-border: rgba(212, 185, 106, 0.3);
+  --gamification-ember: #c98a6a;
+  --gamification-gold: #d4b96a;
+  --gamification-bar: linear-gradient(90deg, #c98a6a 0%, #d4b96a 100%);
+  --gamification-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --streak-icon-bg: rgba(201, 138, 106, 0.18);
+  --streak-icon-border: rgba(201, 138, 106, 0.4);
+  --streak-label: #d4a574;
+  --xp-icon-bg: rgba(212, 185, 106, 0.18);
+  --xp-icon-border: rgba(212, 185, 106, 0.4);
+  --xp-label: #e0c878;
+  --level-bg: linear-gradient(135deg, rgba(126, 184, 168, 0.16) 0%, rgba(14, 16, 20, 0.9) 100%);
+  --level-border: rgba(126, 184, 168, 0.35);
+  --level-icon: #95c9bb;
+  --level-label: #b8d4cb;
+  --level-shadow: 0 8px 24px rgba(126, 184, 168, 0.12);
+  --leaderboard-gold-bg: rgba(212, 185, 106, 0.15);
+
+  --course-enrolled-bg: linear-gradient(135deg, rgba(111, 191, 154, 0.14) 0%, rgba(126, 184, 168, 0.12) 50%, rgba(14, 16, 20, 0.95) 100%);
+  --course-enrolled-border: rgba(111, 191, 154, 0.32);
+  --course-enrolled-glow: #6fbf9a;
+  --course-emerald: #8fd4b4;
+  --course-progress-bar: linear-gradient(90deg, #6fbf9a 0%, #7eb8a8 100%);
+  --course-play-btn: linear-gradient(135deg, #6fbf9a 0%, #7eb8a8 100%);
+  --course-play-shadow: 0 4px 14px rgba(111, 191, 154, 0.4);
+  --course-enrolled-shadow: 0 14px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  --course-catalog-bg: rgba(22, 26, 32, 0.88);
+  --course-catalog-border: rgba(126, 184, 168, 0.22);
+  --course-catalog-icon-bg: linear-gradient(135deg, rgba(126, 184, 168, 0.22) 0%, rgba(138, 164, 184, 0.18) 100%);
+  --course-catalog-accent: #95c9bb;
+  --course-catalog-icon-border: rgba(126, 184, 168, 0.3);
+  --course-catalog-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --price-badge-bg: rgba(111, 191, 154, 0.12);
+  --price-badge-border: rgba(111, 191, 154, 0.3);
+
+  --ambient-blob-1: rgba(126, 184, 168, 0.22);
+  --ambient-blob-2: rgba(180, 196, 210, 0.14);
+  --ambient-blob-3: rgba(100, 140, 160, 0.12);
+  --ambient-blob-4: rgba(126, 184, 168, 0.08);
+}

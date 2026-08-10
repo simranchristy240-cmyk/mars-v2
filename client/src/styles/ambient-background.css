@@ -1,0 +1,167 @@
+/* Ambient drifting shapes for Lunar Drift & Silk Paper */
+
+.ambient-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  will-change: transform;
+  opacity: 1;
+}
+
+/* Lunar Drift — soft elliptical moons + haze */
+[data-theme='lunar-drift'] .ambient-blob {
+  filter: blur(72px);
+}
+
+[data-theme='lunar-drift'] .ambient-blob--1 {
+  width: min(55vw, 420px);
+  height: min(55vw, 420px);
+  top: -8%;
+  left: -6%;
+  background: var(--ambient-blob-1);
+  border-radius: 58% 42% 48% 52%;
+  animation: ambient-drift-a 38s ease-in-out infinite;
+}
+
+[data-theme='lunar-drift'] .ambient-blob--2 {
+  width: min(40vw, 300px);
+  height: min(48vw, 360px);
+  top: 55%;
+  right: -8%;
+  background: var(--ambient-blob-2);
+  border-radius: 45% 55% 60% 40%;
+  animation: ambient-drift-b 44s ease-in-out infinite;
+  animation-delay: -12s;
+}
+
+[data-theme='lunar-drift'] .ambient-blob--3 {
+  width: min(32vw, 240px);
+  height: min(32vw, 240px);
+  bottom: 12%;
+  left: 28%;
+  background: var(--ambient-blob-3);
+  border-radius: 50%;
+  animation: ambient-breathe 32s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+[data-theme='lunar-drift'] .ambient-blob--4 {
+  width: min(28vw, 200px);
+  height: min(36vw, 260px);
+  top: 22%;
+  right: 22%;
+  background: var(--ambient-blob-4);
+  border-radius: 62% 38% 44% 56%;
+  animation: ambient-drift-c 40s ease-in-out infinite;
+  animation-delay: -20s;
+}
+
+/* Silk Paper — soft ink-wash organic blobs */
+[data-theme='silk-paper'] .ambient-blob {
+  filter: blur(80px);
+}
+
+[data-theme='silk-paper'] .ambient-blob--1 {
+  width: min(60vw, 480px);
+  height: min(50vw, 400px);
+  top: -12%;
+  right: -10%;
+  background: var(--ambient-blob-1);
+  border-radius: 40% 60% 55% 45%;
+  animation: ambient-drift-a 42s ease-in-out infinite;
+}
+
+[data-theme='silk-paper'] .ambient-blob--2 {
+  width: min(45vw, 340px);
+  height: min(45vw, 340px);
+  bottom: -10%;
+  left: -8%;
+  background: var(--ambient-blob-2);
+  border-radius: 55% 45% 40% 60%;
+  animation: ambient-drift-b 48s ease-in-out infinite;
+  animation-delay: -15s;
+}
+
+[data-theme='silk-paper'] .ambient-blob--3 {
+  width: min(36vw, 280px);
+  height: min(42vw, 320px);
+  top: 40%;
+  left: 40%;
+  background: var(--ambient-blob-3);
+  border-radius: 48% 52% 58% 42%;
+  animation: ambient-drift-c 36s ease-in-out infinite;
+  animation-delay: -8s;
+}
+
+[data-theme='silk-paper'] .ambient-blob--4 {
+  width: min(24vw, 180px);
+  height: min(30vw, 220px);
+  top: 18%;
+  left: 12%;
+  background: var(--ambient-blob-4);
+  border-radius: 60% 40% 50% 50%;
+  animation: ambient-breathe 30s ease-in-out infinite;
+  animation-delay: -18s;
+}
+
+@keyframes ambient-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(4%, 6%) scale(1.06);
+  }
+  66% {
+    transform: translate(-3%, 3%) scale(0.96);
+  }
+}
+
+@keyframes ambient-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(-5%, -4%) scale(1.08);
+  }
+  70% {
+    transform: translate(3%, -2%) scale(0.94);
+  }
+}
+
+@keyframes ambient-drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(5%, -5%) scale(1.05) rotate(4deg);
+  }
+}
+
+@keyframes ambient-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blob {
+    animation: none !important;
+  }
+}

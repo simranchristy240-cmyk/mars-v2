@@ -1,0 +1,35 @@
+We are creating a learning app like coursera. Here students come to learn mainly anatomy and are provided with videos, study materials, questions and tests.
+
+There are types of users - Students and Admins. 
+
+Flow for students
+- Login and register - through phone no OTP, or email otp or through google login - use firebase to help with this
+- Once logging in they will see available 'courses'. Some part of the courses will be free but they would have to subscribe/pay to see the whole course
+- Courses will have - topics and subtopics and each of those will have videos and practice questions (multiple choice).
+- Each course will have a test series. Each test will have a name, duration and start time & date and end time & date
+- Reports - Students will see reports of tests, practice questions and how much videos they have seen
+- Videos will be hosted in Vimeo and we will embed it in our site
+- We will also add some gamification elements that will ensure that students will be hooked to learning
+- They should also see progress, how they are improving (or not) in their learning
+
+For admin
+- Create courses, add lessons with videos and questions, practice questions, test series
+- architecture - all of lessons question banks and tests should have individual sections. Sections will have text (which is question text if the section is a question), video id, video start time and end time, options, answer, hints and explanation
+- Decide which lessons are free
+
+UI and UX
+Keep the UX very simple
+- Continue from where you stopped
+- List of courses
+- Reports
+- Gamification elements
+- UI Style - minimal meditative app like
+- The colour of the logo is #090941 - ensure the theme is able manage that
+- Add a couple of soothing themes to select from
+- It is mobile first
+- Get influenced from Headspace and khan academy for UI and UX
+
+Use nodejs, mongo and react and typescript (if required)
+
+Security
+- Disable screenshot, copy and other such features

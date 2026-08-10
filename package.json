@@ -1,0 +1,23 @@
+{
+  "name": "mars-v2-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MARS v2 - Anatomy Learning Platform Monorepo",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=server & npm run dev --workspace=client",
+    "seed": "npm run seed --workspace=server",
+    "build": "npm run build --workspace=shared && npm run build --workspace=server && npm run build --workspace=client",
+    "start": "npm run start --workspace=server",
+    "lint": "npm run lint --workspace=client && npm run lint --workspace=server",
+    "type-check": "npm run type-check --workspace=shared && npm run type-check --workspace=client && npm run type-check --workspace=server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  }
+}
