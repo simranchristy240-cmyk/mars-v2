@@ -3,10 +3,9 @@ import { connectDB } from './config/database';
 import { ENV } from './config/env';
 
 const startServer = async () => {
-  await connectDB();
-
   let PORT = parseInt(ENV.PORT, 10) || 5000;
 
+  // Bind HTTP first so Render health checks can pass while Mongo retries.
   const server = app
     .listen(PORT, () => {
       console.log(`[MARS Server] Server listening on http://localhost:${PORT}`);
@@ -21,6 +20,9 @@ const startServer = async () => {
         console.error('[MARS Server] Server error:', err);
       }
     });
+
+  // Do not block listen on Mongo — reconnect in background.
+  void connectDB();
 };
 
 startServer();
