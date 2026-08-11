@@ -87,7 +87,10 @@ export const Lesson: React.FC = () => {
           gap: '12px',
         }}
       >
-        <button onClick={() => navigate(-1)} style={{ color: 'var(--text-primary)' }}>
+        <button
+          onClick={() => navigate(`/course/${lesson.courseId}`)}
+          style={{ color: 'var(--text-primary)' }}
+        >
           <ArrowLeft size={20} />
         </button>
         <div>

@@ -6,7 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config();
 
 export const ENV = {
-  PORT: process.env.PORT || '5000',
+  PORT: process.env.PORT || '5053',
   NODE_ENV: process.env.NODE_ENV || 'development',
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/mars_v2',
   JWT_SECRET: process.env.JWT_SECRET || 'mars_jwt_super_secret_key_2026',

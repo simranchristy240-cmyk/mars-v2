@@ -176,19 +176,22 @@ export const StudentDashboard: React.FC = () => {
           )}
           {recentProgress.length > 0 ? (
             // ENROLLED COURSES LIST
-            recentProgress.map((item: any) => (
+            recentProgress.map((item: any) => {
+              const lessonId =
+                item.lastActivity?.lessonId?._id || item.lastActivity?.lessonId;
+              const courseId = item.courseId?._id || item.courseId;
+
+              const continueLearning = () => {
+                if (lessonId) {
+                  navigate(`/lesson/${lessonId}`);
+                } else if (courseId) {
+                  navigate(`/course/${courseId}`);
+                }
+              };
+
+              return (
               <div
-                key={item._id || item.courseId?._id}
-                onClick={() => {
-                  const lessonId =
-                    item.lastActivity?.lessonId?._id || item.lastActivity?.lessonId;
-                  const courseId = item.courseId?._id || item.courseId;
-                  if (lessonId) {
-                    navigate(`/lesson/${lessonId}`);
-                  } else if (courseId) {
-                    navigate(`/course/${courseId}`);
-                  }
-                }}
+                key={item._id || courseId}
                 className="glass-card"
                 style={{
                   position: 'relative',
@@ -197,7 +200,6 @@ export const StudentDashboard: React.FC = () => {
                   background: 'var(--course-enrolled-bg)',
                   border: '1px solid var(--course-enrolled-border)',
                   boxShadow: 'var(--course-enrolled-shadow)',
-                  cursor: 'pointer',
                   overflow: 'hidden',
                 }}
               >
@@ -219,39 +221,15 @@ export const StudentDashboard: React.FC = () => {
 
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'var(--course-emerald)',
                     marginBottom: '10px',
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: 'var(--course-emerald)',
-                    }}
-                  >
-                    CONTINUE LESSON • {item.overallPercentage || 0}%
-                  </div>
-
-                  <div
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      background: 'var(--course-play-btn)',
-                      color: 'var(--on-accent)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: 'var(--course-play-shadow)',
-                    }}
-                  >
-                    <Play size={15} fill="currentColor" style={{ marginLeft: '2px' }} />
-                  </div>
+                  ENROLLED • {item.overallPercentage || 0}%
                 </div>
 
                 <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '4px', lineHeight: 1.25, color: 'var(--text-primary)' }}>
@@ -270,6 +248,7 @@ export const StudentDashboard: React.FC = () => {
                     borderRadius: '10px',
                     background: 'var(--track-bg)',
                     overflow: 'hidden',
+                    marginBottom: '16px',
                   }}
                 >
                   <div
@@ -281,8 +260,57 @@ export const StudentDashboard: React.FC = () => {
                     }}
                   />
                 </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={continueLearning}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '11px 14px',
+                      borderRadius: '14px',
+                      border: 'none',
+                      background: 'var(--course-play-btn)',
+                      color: 'var(--on-accent)',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      boxShadow: 'var(--course-play-shadow)',
+                    }}
+                  >
+                    <Play size={14} fill="currentColor" />
+                    Continue
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => courseId && navigate(`/course/${courseId}`)}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '11px 14px',
+                      borderRadius: '14px',
+                      border: '1px solid var(--course-enrolled-border)',
+                      background: 'transparent',
+                      color: 'var(--text-primary)',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <BookOpen size={15} />
+                    Course page
+                  </button>
+                </div>
               </div>
-            ))
+              );
+            })
           ) : (
             // ALL AVAILABLE COURSES LIST (WHEN STUDENT HAS NOT ENROLLED IN ANY)
             courses.map((c: any) => (

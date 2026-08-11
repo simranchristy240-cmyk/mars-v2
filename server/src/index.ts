@@ -3,7 +3,7 @@ import { connectDB } from './config/database';
 import { ENV } from './config/env';
 
 const startServer = async () => {
-  let PORT = parseInt(ENV.PORT, 10) || 5000;
+  let PORT = parseInt(ENV.PORT, 10) || 5053;
 
   // Bind HTTP first so Render health checks can pass while Mongo retries.
   const server = app
