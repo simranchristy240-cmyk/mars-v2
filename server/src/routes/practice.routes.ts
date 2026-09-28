@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.middleware';
 const router = Router();
 
 router.get('/topic/:topicId', authenticate, getPracticeQuestions);
+router.get('/topic/:topicId/set/:setId', authenticate, getPracticeQuestions);
 router.post('/submit', authenticate, submitPracticeAnswer);
 
 export default router;

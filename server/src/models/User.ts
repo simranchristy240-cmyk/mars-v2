@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IUserDocument extends Document {
   firebaseUid: string;
@@ -9,13 +9,14 @@ export interface IUserDocument extends Document {
   phone?: string;
   avatar?: string;
   role: 'student' | 'admin';
+  selectedCourseId?: Types.ObjectId;
   activeSessionId?: string;
   preferences: {
     theme: 'deep-ocean' | 'soft-cloud' | 'sunset-calm' | 'lunar-drift' | 'silk-paper';
     language: string;
   };
   referralCode: string;
-  referredBy?: Schema.Types.ObjectId;
+  referredBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,12 +31,13 @@ const UserSchema = new Schema<IUserDocument>(
     phone: { type: String, trim: true },
     avatar: { type: String, default: '' },
     role: { type: String, enum: ['student', 'admin'], default: 'student' },
+    selectedCourseId: { type: Schema.Types.ObjectId, ref: 'Course' },
     activeSessionId: { type: String },
     preferences: {
       theme: {
         type: String,
         enum: ['deep-ocean', 'soft-cloud', 'sunset-calm', 'lunar-drift', 'silk-paper'],
-        default: 'deep-ocean',
+        default: 'soft-cloud',
       },
       language: { type: String, default: 'en' },
     },

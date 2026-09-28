@@ -1,13 +1,41 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, LogOut, Shield, Settings, ChevronDown, Trophy } from 'lucide-react';
+import api from '../../services/api';
+import { LogOut, Shield, Settings, Trophy, Sparkles, Lock, ChevronDown, PanelLeft } from 'lucide-react';
+import { useDrawer } from '../../contexts/DrawerContext';
+import { GoalSelectionModal } from '../GoalSelectionModal';
+import { TierUpgradeModal } from '../TierUpgradeModal';
+import { NAV_ITEMS } from './navItems';
+
+const getTrackEmoji = (title?: string) => {
+  if (!title) return '🎓';
+  const lower = title.toLowerCase();
+  if (lower.includes('mbbs')) return '🩺';
+  if (lower.includes('bds')) return '🦷';
+  if (lower.includes('ayush')) return '🌿';
+  return '🔬';
+};
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { isDrawerOpen, toggleDrawer, hasDrawerContent } = useDrawer();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [goalModalOpen, setGoalModalOpen] = useState(false);
+  const [tierModalOpen, setTierModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { data: myCourseRes } = useQuery({
+    queryKey: ['my-course', user?.selectedCourseId],
+    queryFn: () => api.get('/courses/my/active'),
+    enabled: !!user && user.role === 'student',
+  });
+
+  const activeCourse = myCourseRes?.data?.data?.course;
+  const studentTier = myCourseRes?.data?.data?.studentTier || 'free';
+  const isStudent = !!user && user.role === 'student';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -16,9 +44,7 @@ export const Navbar: React.FC = () => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleLogout = () => {
@@ -28,212 +54,126 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'var(--bg-surface)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '12px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-        <img
-          src="/logo.png"
-          alt="MARS Logo"
-          style={{
-            height: '34px',
-            borderRadius: '6px',
-            background: '#ffffff',
-            padding: '2px 8px',
-            objectFit: 'contain',
-            boxShadow: 'var(--logo-glow)',
-          }}
-        />
-      </Link>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {user ? (
-          <div ref={dropdownRef} style={{ position: 'relative' }}>
+    <header className="shell-topbar">
+      <div className="shell-topbar-inner">
+        <div className="shell-topbar-left">
+          {isStudent && hasDrawerContent && (
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '3px',
-                borderRadius: 'var(--radius-full)',
-                background: dropdownOpen ? 'var(--accent-light)' : 'transparent',
-                border: '1px solid var(--border-color)',
-                cursor: 'pointer',
-                color: 'var(--text-primary)',
-                transition: 'all 0.2s ease',
-              }}
-              title="User Account Menu"
+              type="button"
+              onClick={toggleDrawer}
+              className={`ui-icon-btn${isDrawerOpen ? ' is-active' : ''}`}
+              title={isDrawerOpen ? 'Hide curriculum' : 'Show curriculum'}
+              aria-label="Toggle curriculum navigation"
             >
-              <div
-                style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--accent)',
-                  color: 'var(--on-accent)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                }}
-              >
-                {user.name.charAt(0).toUpperCase()}
-              </div>
+              <PanelLeft size={19} />
             </button>
-
-            {dropdownOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  right: 0,
-                  width: '220px',
-                  background: 'var(--bg-surface)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 'var(--radius-md)',
-                  boxShadow: 'var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.3))',
-                  padding: '8px',
-                  zIndex: 200,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                }}
-              >
-                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{user.name}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {user.email || user.phone || 'Student Account'}
-                  </div>
-                </div>
-
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    onClick={() => setDropdownOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-xs)',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.88rem',
-                      fontWeight: 500,
-                      textDecoration: 'none',
-                      transition: 'background 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <Shield size={16} color="var(--accent)" />
-                    <span>Admin Panel</span>
-                  </Link>
-                )}
-
-                <Link
-                  to="/achievements"
-                  onClick={() => setDropdownOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-xs)',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.88rem',
-                    fontWeight: 500,
-                    textDecoration: 'none',
-                    transition: 'background 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <Trophy size={16} color="var(--gold, #fbbf24)" />
-                  <span>Rank & Badges</span>
-                </Link>
-
-                <Link
-                  to="/settings"
-                  onClick={() => setDropdownOpen(false)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-xs)',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.88rem',
-                    fontWeight: 500,
-                    textDecoration: 'none',
-                    transition: 'background 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-secondary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <Settings size={16} color="var(--accent)" />
-                  <span>Settings</span>
-                </Link>
-
-                <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
-
-                <button
-                  onClick={handleLogout}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-xs)',
-                    color: 'var(--error, #ef4444)',
-                    fontSize: '0.88rem',
-                    fontWeight: 600,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'background 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--error-light, rgba(239, 68, 68, 0.1))')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Link
-            to="/login"
-            style={{
-              padding: '8px 18px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--accent)',
-              color: 'var(--on-accent)',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              textDecoration: 'none',
-            }}
-          >
-            Sign In
+          )}
+          <Link to="/" className="shell-logo" aria-label="MARS home">
+            <img src="/logo.png" alt="MARS" />
           </Link>
+        </div>
+
+        {isStudent && (
+          <nav className="shell-pillnav" aria-label="Primary">
+            {NAV_ITEMS.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => (isActive ? 'is-active' : '')}>
+                <item.icon size={16} />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
         )}
+
+        <div className="shell-topbar-right">
+          {isStudent && (
+            <>
+              <button
+                type="button"
+                className="shell-track"
+                onClick={() => {
+                  if (!user.isCourseLocked) setGoalModalOpen(true);
+                }}
+                title={user.isCourseLocked ? 'Track locked after purchase' : 'Change preparation track'}
+                style={{ cursor: user.isCourseLocked ? 'default' : 'pointer' }}
+              >
+                <span className="shell-track-emoji">{getTrackEmoji(activeCourse?.title)}</span>
+                <span className="ui-truncate">
+                  {activeCourse?.title?.split(' - ')[0] || (user.selectedCourseId ? 'Loading…' : 'Select track')}
+                </span>
+                {user.isCourseLocked ? <Lock size={12} /> : <ChevronDown size={14} />}
+              </button>
+
+              {activeCourse && studentTier !== 'premium' && (
+                <button type="button" className="ui-btn is-gold is-sm shell-upgrade" onClick={() => setTierModalOpen(true)}>
+                  <Sparkles size={14} />
+                  <span>{studentTier === 'free' ? 'Upgrade' : `${studentTier[0].toUpperCase()}${studentTier.slice(1)}`}</span>
+                </button>
+              )}
+            </>
+          )}
+
+          {user ? (
+            <div ref={dropdownRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="shell-avatar-btn"
+                title="Account"
+                aria-expanded={dropdownOpen}
+              >
+                <span className="ui-avatar">{user.name.charAt(0).toUpperCase()}</span>
+              </button>
+
+              {dropdownOpen && (
+                <div className="ui-menu" style={{ top: 'calc(100% + 10px)', right: 0, width: 248 }}>
+                  <div className="shell-menu-identity">
+                    <span className="ui-avatar" style={{ ['--size' as string]: '40px' }}>
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                    <div className="ui-grow">
+                      <div className="ui-truncate" style={{ fontWeight: 600 }}>{user.name}</div>
+                      <div className="ui-faint ui-truncate">{user.email || user.phone || 'Student account'}</div>
+                    </div>
+                  </div>
+                  <div className="ui-menu-sep" />
+
+                  {user.role === 'admin' && (
+                    <Link to="/admin" className="ui-menu-item" onClick={() => setDropdownOpen(false)}>
+                      <Shield size={16} /> Admin panel
+                    </Link>
+                  )}
+                  <Link to="/achievements" className="ui-menu-item" onClick={() => setDropdownOpen(false)}>
+                    <Trophy size={16} /> Rank &amp; badges
+                  </Link>
+                  <Link to="/settings" className="ui-menu-item" onClick={() => setDropdownOpen(false)}>
+                    <Settings size={16} /> Settings
+                  </Link>
+
+                  <div className="ui-menu-sep" />
+                  <button type="button" className="ui-menu-item is-danger" onClick={handleLogout}>
+                    <LogOut size={16} /> Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/login" className="ui-btn is-primary is-sm">
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
+
+      {goalModalOpen && <GoalSelectionModal isOpen={true} onClose={() => setGoalModalOpen(false)} mandatory={false} />}
+
+      {tierModalOpen && activeCourse && (
+        <TierUpgradeModal
+          isOpen={true}
+          onClose={() => setTierModalOpen(false)}
+          course={activeCourse}
+          currentTier={studentTier}
+        />
+      )}
     </header>
   );
 };

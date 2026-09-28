@@ -10,15 +10,11 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  */
 const ensureDnsForAtlas = () => {
   if (!ENV.MONGODB_URI.startsWith('mongodb+srv://')) return;
-
-  const servers = dns.getServers();
-  const onlyLoopback =
-    servers.length > 0 &&
-    servers.every((s) => s === '127.0.0.1' || s === '::1' || s.startsWith('127.0.0.1'));
-
-  if (onlyLoopback) {
+  try {
     dns.setServers(['8.8.8.8', '1.1.1.1']);
-    console.log('[Database] DNS loopback refused SRV; using 8.8.8.8 / 1.1.1.1');
+    console.log('[Database] Configured public DNS (8.8.8.8 / 1.1.1.1) for Atlas SRV resolution.');
+  } catch (err) {
+    console.warn('[Database] Could not override DNS servers:', err);
   }
 };
 

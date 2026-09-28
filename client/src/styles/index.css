@@ -5,6 +5,9 @@
 @import './themes/lunar-drift.css';
 @import './themes/silk-paper.css';
 @import './ambient-background.css';
+@import './curriculum-sidebar.css';
+@import './ui.css';
+@import './shell.css';
 
 :root {
   --font-family-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -119,3 +122,237 @@ input, textarea, select {
   border-color: var(--border-glow, var(--accent));
   box-shadow: var(--card-shadow-hover, 0 14px 38px rgba(0, 0, 0, 0.28));
 }
+
+/* ─── Responsive Layout ──────────────────────────────────────────────────── */
+
+/* Student page shell — responsive width across mobile, tablet, and wide desktop */
+.student-shell {
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 16px 36px;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .student-shell {
+    padding: 20px 24px 44px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .student-shell {
+    padding: 24px 36px 56px;
+    max-width: 1400px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .student-shell {
+    padding: 28px 48px 60px;
+    max-width: 1600px;
+  }
+}
+
+/* App outer body wrapper */
+.app-layout-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Desktop sidebar — removed from layout */
+.side-nav-desktop {
+  display: none !important;
+}
+
+/* Top navbar wrapper — the sticky element itself */
+.top-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* ─── Dashboard grid ──────────────────────────────────────────────────────── */
+
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ─── Reports grid (desktop side-by-side) ─────────────────────────────────── */
+
+.reports-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+@media (min-width: 1200px) {
+  .reports-summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .reports-body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
+/* ─── Achievements stats grid (desktop wider) ─────────────────────────────── */
+
+@media (min-width: 1200px) {
+  .achievements-body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+}
+
+/* ─── Profile grid (desktop two-column) ──────────────────────────────────── */
+
+@media (min-width: 1200px) {
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+}
+
+/* ─── Lesson view (Modern Glassmorphic Drawer Navigation) ──────────────────── */
+
+.lesson-page-container {
+  display: flex;
+  min-height: calc(100vh - 64px);
+  width: 100%;
+  position: relative;
+  background: transparent;
+}
+
+/* Mobile drawer backdrop */
+.lesson-drawer-backdrop {
+  display: none;
+}
+
+/* Custom sleek scrollbar for curriculum navigation */
+.curriculum-drawer-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, rgba(128, 128, 128, 0.25)) transparent;
+}
+.curriculum-drawer-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.curriculum-drawer-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.curriculum-drawer-scroll::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(128, 128, 128, 0.25));
+  border-radius: 10px;
+}
+.curriculum-drawer-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+@media (max-width: 767px) {
+  .lesson-drawer-backdrop.open {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(2, 6, 23, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 140;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .lesson-sidebar-desktop {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 88%;
+    max-width: 360px;
+    z-index: 150;
+    box-shadow: var(--nav-shadow, 0 20px 50px rgba(0, 0, 0, 0.35));
+    transform: translateX(-105%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .lesson-sidebar-desktop.drawer-open {
+    transform: translateX(0);
+  }
+
+  .lesson-main-pane {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 14px 14px 40px;
+    transition: all 0.25s ease;
+  }
+}
+
+@media (min-width: 768px) {
+  .lesson-sidebar-desktop {
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+    flex-shrink: 0;
+    padding: 16px 0 16px 16px;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    z-index: 20;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  }
+
+  .lesson-sidebar-desktop.drawer-closed {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .lesson-main-pane {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 24px 32px 60px;
+    transition: padding 0.3s ease, max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .lesson-main-pane.sidebar-open {
+    max-width: calc(100% - 320px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .lesson-sidebar-desktop {
+    width: 350px;
+  }
+
+  .lesson-main-pane {
+    padding: 28px 48px 60px;
+  }
+
+  .lesson-main-pane.sidebar-open {
+    max-width: calc(100% - 350px);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+

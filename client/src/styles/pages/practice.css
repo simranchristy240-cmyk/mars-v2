@@ -1,0 +1,226 @@
+/* Practice drill */
+
+.prac-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.ui-btn.prac-back {
+  margin-left: -10px;
+}
+
+.prac-head {
+  margin-bottom: 22px;
+}
+
+.prac-head .prac-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: var(--ui-gold-ink);
+}
+
+.prac-head .ui-page-title {
+  overflow-wrap: anywhere;
+}
+
+.prac-head .ui-page-sub {
+  max-width: 60ch;
+}
+
+/* Progress */
+
+.prac-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.prac-progress-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prac-counter {
+  font-family: var(--font-family-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.prac-counter strong {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.prac-pct {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Question card */
+
+.ui-tile.prac-card {
+  padding: 22px 18px;
+}
+
+@media (min-width: 720px) {
+  .ui-tile.prac-card {
+    padding: 32px 36px;
+  }
+}
+
+.prac-question {
+  font-family: var(--font-family-heading);
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin-bottom: 22px;
+  overflow-wrap: break-word;
+}
+
+.prac-image {
+  display: block;
+  max-width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--ui-tile-border);
+  margin-bottom: 22px;
+}
+
+.prac-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.ui-option.prac-option-dim {
+  opacity: 0.6;
+}
+
+.prac-option-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.prac-option-mark.is-correct { color: var(--success); }
+.prac-option-mark.is-wrong { color: var(--error); }
+
+/* Result */
+
+.prac-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: ui-rise 0.35s var(--ui-ease);
+}
+
+.prac-feedback {
+  align-items: flex-start;
+}
+
+.prac-feedback-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.prac-feedback-icon.is-correct { color: var(--success); }
+.prac-feedback-icon.is-wrong { color: var(--error); }
+
+.prac-feedback-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: var(--font-family-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.prac-xp {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--ui-gold);
+  color: #1a1406;
+  font-family: var(--font-family-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.prac-feedback-body {
+  margin-top: 4px;
+}
+
+.prac-explanation .ui-label {
+  margin-bottom: 6px;
+}
+
+.prac-explanation-body {
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  max-width: 68ch;
+}
+
+.prac-result .ui-btn {
+  margin-top: 4px;
+}
+
+/* Loading & empty */
+
+.prac-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.prac-loading .ui-faint {
+  text-align: center;
+}
+
+.ui-skeleton.prac-skel-line {
+  --h: 16px;
+  width: 30%;
+  border-radius: 999px;
+}
+
+.ui-skeleton.prac-skel-title {
+  --h: 40px;
+  width: 70%;
+}
+
+.ui-skeleton.prac-skel-bar {
+  --h: 8px;
+  border-radius: 999px;
+}
+
+.ui-skeleton.prac-skel-card {
+  --h: 320px;
+  margin-top: 6px;
+}
+
+.ui-tile.prac-empty {
+  margin-top: 8vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prac-result {
+    animation: none;
+  }
+}

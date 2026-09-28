@@ -11,7 +11,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<AppTheme>(() => {
     const saved = localStorage.getItem('mars_theme') as AppTheme;
-    return saved || 'deep-ocean';
+    return saved || 'soft-cloud';
   });
 
   const setTheme = (newTheme: AppTheme) => {

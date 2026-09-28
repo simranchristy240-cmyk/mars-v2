@@ -7,6 +7,8 @@ import { Gamification } from '../models/Gamification';
 import { Topic } from '../models/Topic';
 import { Course } from '../models/Course';
 
+import { canAccessTier, getStudentCourseTier } from '../utils/tierAccess';
+
 export const createTest = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -21,6 +23,7 @@ export const createTest = async (req: AuthenticatedRequest, res: Response) => {
       totalMarks,
       passingMarks,
       negativeMarkingEnabled,
+      accessTier,
       sections,
       isPublished,
     } = req.body;
@@ -35,6 +38,7 @@ export const createTest = async (req: AuthenticatedRequest, res: Response) => {
       totalMarks: totalMarks || 0,
       passingMarks,
       negativeMarkingEnabled: negativeMarkingEnabled || false,
+      accessTier: accessTier || 'free',
       sections: sections || [],
       isPublished: isPublished || false,
       createdBy: req.user._id,
@@ -92,6 +96,10 @@ export const getCourseTests = async (req: AuthenticatedRequest, res: Response) =
     const { courseId } = req.params;
     const tests = await Test.find({ courseId, isPublished: true }).sort({ startTime: 1 });
 
+    const studentTier = req.user
+      ? await getStudentCourseTier(req.user._id, courseId)
+      : 'free';
+
     // Check attempts for current student
     const testIds = tests.map((t) => t._id);
     const attempts = await TestAttempt.find({
@@ -105,8 +113,11 @@ export const getCourseTests = async (req: AuthenticatedRequest, res: Response) =
     const result = tests.map((t) => {
       const tObj = t.toObject();
       const attempt = attemptsMap.get(t._id.toString());
+      const isLocked = !canAccessTier(studentTier, t.accessTier || 'free');
       return {
         ...tObj,
+        isLocked,
+        studentTier,
         attemptStatus: attempt ? attempt.status : 'not-started',
         hasAttempted: !!attempt,
         attemptId: attempt ? attempt._id : undefined,
@@ -130,6 +141,17 @@ export const startTest = async (req: AuthenticatedRequest, res: Response) => {
     });
 
     if (!test) return res.status(404).json({ success: false, error: 'Test not found' });
+
+    const studentTier = await getStudentCourseTier(req.user._id, test.courseId);
+    if (!canAccessTier(studentTier, test.accessTier || 'free')) {
+      return res.status(403).json({
+        success: false,
+        error: `This test requires the ${(test.accessTier || 'basic').toUpperCase()} tier plan. Please upgrade to access.`,
+        isLocked: true,
+        requiredTier: test.accessTier,
+        studentTier,
+      });
+    }
 
     // Enforce schedule window
     const now = new Date();

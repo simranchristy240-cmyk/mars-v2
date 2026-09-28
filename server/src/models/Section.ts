@@ -22,6 +22,7 @@ export interface ISectionDocument extends Document {
   marks?: number;
   negativeMarks?: number;
   order: number;
+  accessTier?: 'free' | 'basic' | 'plus' | 'premium';
   isPublished: boolean;
   parentId: Schema.Types.ObjectId;
   parentType: 'lesson' | 'practice' | 'test';
@@ -62,6 +63,11 @@ const SectionSchema = new Schema<ISectionDocument>(
     marks: { type: Number, default: 1 },
     negativeMarks: { type: Number, default: 0 },
     order: { type: Number, required: true },
+    accessTier: {
+      type: String,
+      enum: ['free', 'basic', 'plus', 'premium'],
+      default: 'free',
+    },
     isPublished: { type: Boolean, default: true },
     parentId: { type: Schema.Types.ObjectId, required: true },
     parentType: {

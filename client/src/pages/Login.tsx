@@ -2,7 +2,31 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { loginWithGoogle, loginWithPhoneOTP } from '../services/firebase';
-import { Sparkles, ShieldCheck, UserPlus, UserCheck, Shield, KeyRound } from 'lucide-react';
+import {
+  Sparkles,
+  ShieldCheck,
+  UserPlus,
+  UserCheck,
+  Shield,
+  KeyRound,
+  Crown,
+  Brain,
+  Flame,
+  BarChart3,
+  User,
+  Lock,
+  Mail,
+  ArrowRight,
+} from 'lucide-react';
+import '../styles/pages/login.css';
+
+const FEATURES = [
+  { icon: <Brain size={18} />, title: 'Structured curriculum', desc: 'Topic-by-topic courses built for deep retention' },
+  { icon: <Flame size={18} />, title: 'Daily streaks & XP', desc: 'Gamified progress that keeps you coming back', gold: true },
+  { icon: <BarChart3 size={18} />, title: 'Test analytics', desc: 'Track performance trends across every test series' },
+];
+
+const TRACKS = ['MBBS', 'BDS', 'AYUSH', 'General'];
 
 export const Login: React.FC = () => {
   const [authMethod, setAuthMethod] = useState<'password' | 'phone' | 'email'>('password');
@@ -20,6 +44,7 @@ export const Login: React.FC = () => {
     loginWithPassword,
     loginAsDemoNewStudent,
     loginAsDemoStudent,
+    loginAsDemoPaidStudent,
     loginAsDemoAdmin,
   } = useAuth();
   const navigate = useNavigate();
@@ -107,420 +132,270 @@ export const Login: React.FC = () => {
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '12px 16px',
-    borderRadius: 'var(--radius-sm)',
-    background: 'var(--bg-secondary)',
-    border: '1px solid var(--border-color)',
-    color: 'var(--text-primary)',
-    fontSize: '1rem',
-  };
+  const demos = [
+    {
+      key: 'new',
+      icon: <UserPlus size={17} />,
+      tone: 'is-accent',
+      title: 'New student',
+      desc: 'newstudent / mars123 — no track yet (triggers goal modal)',
+      run: () => runDemo(loginAsDemoNewStudent),
+    },
+    {
+      key: 'free',
+      icon: <UserCheck size={17} />,
+      tone: 'is-success',
+      title: 'Free student',
+      desc: 'student / mars123 — MBBS free preview (unlocked, can switch tracks)',
+      run: () => runDemo(loginAsDemoStudent),
+    },
+    {
+      key: 'paid',
+      icon: <Crown size={17} />,
+      tone: 'is-gold',
+      title: 'Paid student',
+      desc: 'paidstudent / mars123 — MBBS Basic (locked track, can upgrade tier)',
+      run: () => runDemo(loginAsDemoPaidStudent),
+    },
+    {
+      key: 'admin',
+      icon: <Shield size={17} />,
+      tone: '',
+      title: 'Admin',
+      desc: 'admin / mars123 — manage tracks, tiers, pricing & content',
+      run: () => runDemo(loginAsDemoAdmin, 'admin'),
+    },
+  ];
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg-primary)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-      }}
-    >
-      <div
-        className="glass-card animate-fade-in"
-        style={{
-          width: '100%',
-          maxWidth: '440px',
-          padding: '32px 28px',
-          textAlign: 'center',
-        }}
-      >
-        <img
-          src="/logo.png"
-          alt="MARS Logo"
-          style={{
-            height: '48px',
-            borderRadius: '10px',
-            background: '#ffffff',
-            padding: '4px 14px',
-            objectFit: 'contain',
-            margin: '0 auto 16px',
-            display: 'block',
-            boxShadow: 'var(--logo-glow)',
-          }}
-        />
+    <div className="login">
+      {/* ── Brand panel: compact header on phones, full inverse panel on desktop ── */}
+      <aside className="ui-tile is-inverse login-brand ui-rise" style={{ ['--i' as string]: 0 }}>
+        <div className="ui-sunburst login-sunburst" aria-hidden="true" />
+        <div className="ui-sunburst login-sunburst is-small" aria-hidden="true" />
 
-        <h1 style={{ fontSize: '1.8rem', marginBottom: '6px' }}>Welcome to MARS</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px' }}>
-          Meditative Anatomy Learning Platform
-        </p>
+        <div className="login-logo-chip">
+          <span className="login-logo">
+            <img src="/logo.png" alt="MARS Logo" />
+          </span>
+        </div>
 
-        {error && (
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--error-light)',
-              color: 'var(--error)',
-              fontSize: '0.85rem',
-              marginBottom: '16px',
-              textAlign: 'left',
-            }}
-          >
-            {error}
-          </div>
-        )}
+        <div className="login-brand-copy">
+          <span className="ui-label">Meditative Anatomy Learning Platform</span>
+          <h1 className="login-headline">
+            Master anatomy, <span>one layer at a time.</span>
+          </h1>
+          <p className="login-lede">
+            Structured lessons, progressive tests and a gamified learning journey — all in one calm place.
+          </p>
+        </div>
 
-        {/* Auth method tabs */}
-        <div
-          style={{
-            display: 'flex',
-            background: 'var(--bg-secondary)',
-            padding: '4px',
-            borderRadius: 'var(--radius-sm)',
-            marginBottom: '20px',
-            border: '1px solid var(--border-color)',
-          }}
-        >
-          {(
-            [
-              ['password', 'Password'],
-              ['phone', 'Phone OTP'],
-              ['email', 'Email OTP'],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => {
-                setAuthMethod(id);
-                setStep('input');
-                setError('');
-              }}
-              style={{
-                flex: 1,
-                padding: '8px 4px',
-                borderRadius: 'var(--radius-xs)',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: authMethod === id ? 'var(--on-accent)' : 'var(--text-secondary)',
-                background: authMethod === id ? 'var(--accent)' : 'transparent',
-              }}
-            >
-              {label}
-            </button>
+        <div className="login-bento">
+          {FEATURES.map((f, i) => (
+            <div key={f.title} className="login-feature" style={{ ['--i' as string]: i + 2 }}>
+              <span className={`ui-icon-box ${f.gold ? 'is-gold' : 'is-on-inverse'}`} style={{ ['--size' as string]: '38px' }}>
+                {f.icon}
+              </span>
+              <div>
+                <div className="login-feature-title">{f.title}</div>
+                <div className="ui-muted login-feature-desc">{f.desc}</div>
+              </div>
+            </div>
           ))}
+          <div className="login-feature is-tracks" style={{ ['--i' as string]: 5 }}>
+            <span className="ui-label">Pick your track</span>
+            <div className="ui-row" style={{ ['--gap' as string]: '6px' }}>
+              {TRACKS.map((t) => (
+                <span key={t} className="ui-chip is-on-inverse">
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
+      </aside>
 
-        {authMethod === 'password' && (
-          <form onSubmit={handlePasswordLogin} style={{ textAlign: 'left', marginBottom: '16px' }}>
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                Username
-              </label>
-              <input
-                type="text"
-                autoComplete="username"
-                placeholder="student"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                Password
-              </label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--accent)',
-                color: 'var(--on-accent)',
-                fontWeight: 700,
-                fontSize: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-              }}
-            >
-              <KeyRound size={18} />
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-            <p style={{ marginTop: '10px', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-              Demo: <strong>newstudent</strong> / <strong>student</strong> / <strong>admin</strong> — password{' '}
-              <strong>mars123</strong>
-            </p>
-          </form>
-        )}
+      {/* ── Form column ────────────────────────────────────────────────────── */}
+      <main className="ui-tile login-main ui-rise" style={{ ['--i' as string]: 1 }}>
+        <div className="login-form">
+          <header className="login-form-head">
+            <h2 className="ui-page-title">Welcome to MARS</h2>
+            <p className="ui-page-sub">Sign in to pick up right where you left off.</p>
+          </header>
 
-        {authMethod !== 'password' && step === 'input' && (
-          <form onSubmit={handleSendOTP} style={{ textAlign: 'left', marginBottom: '16px' }}>
-            {authMethod === 'phone' ? (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                  Phone Number
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <span
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-primary)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    +91
-                  </span>
+          {error && (
+            <div className="ui-callout is-danger login-error" role="alert">
+              {error}
+            </div>
+          )}
+
+          <div className="ui-segmented login-tabs" role="tablist">
+            {(
+              [
+                ['password', 'Password'],
+                ['phone', 'Phone OTP'],
+                ['email', 'Email OTP'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={authMethod === id}
+                className={authMethod === id ? 'is-active' : ''}
+                onClick={() => {
+                  setAuthMethod(id);
+                  setStep('input');
+                  setError('');
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {authMethod === 'password' && (
+            <form onSubmit={handlePasswordLogin} className="ui-stack login-fields" style={{ ['--gap' as string]: '14px' }}>
+              <label className="ui-field">
+                <span className="ui-field-label">Username</span>
+                <span className="ui-input-group">
+                  <User size={17} />
                   <input
-                    type="tel"
-                    placeholder="9876543210"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    style={{ ...inputStyle, flex: 1 }}
+                    className="ui-input"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="student"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                   />
-                </div>
-              </div>
-            ) : (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                  Email Address
+                </span>
+              </label>
+              <label className="ui-field">
+                <span className="ui-field-label">Password</span>
+                <span className="ui-input-group">
+                  <Lock size={17} />
+                  <input
+                    className="ui-input"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </span>
+              </label>
+              <button type="submit" disabled={loading} className="ui-btn is-primary is-lg is-block login-submit">
+                <KeyRound size={18} />
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
+              <p className="ui-faint login-hint">
+                Demo: <strong>newstudent</strong> / <strong>student</strong> / <strong>admin</strong> — password{' '}
+                <strong>mars123</strong>
+              </p>
+            </form>
+          )}
+
+          {authMethod !== 'password' && step === 'input' && (
+            <form onSubmit={handleSendOTP} className="ui-stack login-fields" style={{ ['--gap' as string]: '16px' }}>
+              {authMethod === 'phone' ? (
+                <label className="ui-field">
+                  <span className="ui-field-label">Phone number</span>
+                  <span className="login-phone">
+                    <span className="login-prefix">+91</span>
+                    <input
+                      className="ui-input"
+                      type="tel"
+                      placeholder="9876543210"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </span>
                 </label>
-                <input
-                  type="email"
-                  placeholder="student@mars.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={inputStyle}
-                />
-              </div>
-            )}
+              ) : (
+                <label className="ui-field">
+                  <span className="ui-field-label">Email address</span>
+                  <span className="ui-input-group">
+                    <Mail size={17} />
+                    <input
+                      className="ui-input"
+                      type="email"
+                      placeholder="student@mars.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </span>
+                </label>
+              )}
 
-            <button
-              type="submit"
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--accent)',
-                color: 'var(--on-accent)',
-                fontWeight: 700,
-                fontSize: '1rem',
-                marginBottom: '16px',
-              }}
-            >
-              Get OTP
-            </button>
-          </form>
-        )}
+              <button type="submit" className="ui-btn is-primary is-lg is-block login-submit">
+                Get OTP <ArrowRight size={17} />
+              </button>
+            </form>
+          )}
 
-        {authMethod !== 'password' && step === 'otp' && (
-          <form onSubmit={handleVerifyOTP} style={{ textAlign: 'left', marginBottom: '16px' }}>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              Enter 6-digit code sent to <strong>{phone || email}</strong> (Use <strong>123456</strong> for test mode)
-            </p>
+          {authMethod !== 'password' && step === 'otp' && (
+            <form onSubmit={handleVerifyOTP} className="ui-stack login-fields" style={{ ['--gap' as string]: '14px' }}>
+              <p className="ui-muted">
+                Enter the 6-digit code sent to <strong>{phone || email}</strong> (use <strong>123456</strong> for test mode)
+              </p>
 
-            <input
-              type="text"
-              maxLength={6}
-              placeholder="123456"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              style={{
-                ...inputStyle,
-                fontSize: '1.4rem',
-                textAlign: 'center',
-                letterSpacing: '8px',
-                marginBottom: '20px',
-              }}
-            />
+              <input
+                className="ui-input login-otp"
+                type="text"
+                maxLength={6}
+                placeholder="123456"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+              />
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--accent)',
-                color: 'var(--on-accent)',
-                fontWeight: 700,
-                fontSize: '1rem',
-                marginBottom: '12px',
-              }}
-            >
-              {loading ? 'Verifying...' : 'Verify & Continue'}
-            </button>
+              <button type="submit" disabled={loading} className="ui-btn is-primary is-lg is-block login-submit">
+                {loading ? 'Verifying...' : 'Verify & continue'}
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setStep('input')}
-              style={{
-                width: '100%',
-                padding: '8px',
-                color: 'var(--text-secondary)',
-                fontSize: '0.85rem',
-                textAlign: 'center',
-              }}
-            >
-              Change phone/email
-            </button>
-          </form>
-        )}
+              <button type="button" className="ui-btn is-ghost is-block" onClick={() => setStep('input')}>
+                Change phone/email
+              </button>
+            </form>
+          )}
 
-        {/* 1-CLICK DEMO LOGIN BUTTONS */}
-        <div
-          style={{
-            background: 'var(--bg-secondary)',
-            padding: '14px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-color)',
-            marginBottom: '16px',
-            textAlign: 'left',
-          }}
-        >
-          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: '10px' }}>
-            1-Click Demo Logins
+          <div className="login-or">
+            <span>or</span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              onClick={() => runDemo(loginAsDemoNewStudent)}
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                borderRadius: 'var(--radius-xs)',
-                background: 'var(--accent-light)',
-                color: 'var(--accent)',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
-                textAlign: 'left',
-              }}
-            >
-              <UserPlus size={18} style={{ flexShrink: 0, marginTop: 2 }} />
-              <span>
-                <span style={{ display: 'block' }}>New Student</span>
-                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 500, opacity: 0.85, marginTop: 2 }}>
-                  newstudent / mars123 — no courses yet
-                </span>
-              </span>
-            </button>
+          <button type="button" onClick={handleGoogleLogin} disabled={loading} className="ui-btn is-outline is-lg is-block">
+            <Sparkles size={18} className="login-google-icon" /> Continue with Google
+          </button>
 
-            <button
-              onClick={() => runDemo(loginAsDemoStudent)}
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                borderRadius: 'var(--radius-xs)',
-                background: 'var(--success-light)',
-                color: 'var(--success)',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
-                textAlign: 'left',
-              }}
-            >
-              <UserCheck size={18} style={{ flexShrink: 0, marginTop: 2 }} />
-              <span>
-                <span style={{ display: 'block' }}>Enrolled Student</span>
-                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 500, opacity: 0.85, marginTop: 2 }}>
-                  student / mars123 — 1 course enrolled
-                </span>
-              </span>
-            </button>
+          {/* 1-click demo logins */}
+          <section className="login-demos">
+            <div className="ui-label login-demos-label">1-click demo logins</div>
+            <div className="ui-list">
+              {demos.map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={d.run}
+                  disabled={loading}
+                  className="ui-list-item is-interactive login-demo"
+                >
+                  <span className={`ui-icon-box ${d.tone}`} style={{ ['--size' as string]: '38px' }}>
+                    {d.icon}
+                  </span>
+                  <span className="ui-grow">
+                    <span className="ui-list-title login-block">{d.title}</span>
+                    <span className="ui-list-meta login-block">{d.desc}</span>
+                  </span>
+                  <ArrowRight size={16} className="login-demo-go" />
+                </button>
+              ))}
+            </div>
+          </section>
 
-            <button
-              onClick={() => runDemo(loginAsDemoAdmin, 'admin')}
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                borderRadius: 'var(--radius-xs)',
-                background: 'var(--warning-light)',
-                color: 'var(--warning)',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
-                textAlign: 'left',
-              }}
-            >
-              <Shield size={18} style={{ flexShrink: 0, marginTop: 2 }} />
-              <span>
-                <span style={{ display: 'block' }}>Admin</span>
-                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 500, opacity: 0.85, marginTop: 2 }}>
-                  admin / mars123 — manage courses
-                </span>
-              </span>
-            </button>
+          <div className="ui-faint login-secure">
+            <ShieldCheck size={14} /> Protected by MARS Security & Content Encryption
           </div>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0', color: 'var(--text-muted)' }}>
-          <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
-          <span style={{ padding: '0 10px', fontSize: '0.8rem' }}>OR</span>
-          <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
-        </div>
-
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '12px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            color: 'var(--text-primary)',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-          }}
-        >
-          <Sparkles size={18} color="var(--gold)" /> Continue with Google
-        </button>
-
-        <div
-          style={{
-            marginTop: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            fontSize: '0.78rem',
-            color: 'var(--text-muted)',
-          }}
-        >
-          <ShieldCheck size={14} /> Protected by MARS Security & Content Encryption
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

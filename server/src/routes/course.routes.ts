@@ -4,6 +4,7 @@ import {
   getAdminCourses,
   getAdminCourseDetail,
   getCourseDetail,
+  getMyCourse,
   createCourse,
   updateCourse,
   deleteCourse,
@@ -14,6 +15,7 @@ import { requireRole } from '../middleware/role.middleware';
 const router = Router();
 
 router.get('/', optionalAuth, getCourses);
+router.get('/my/active', authenticate, getMyCourse);
 router.get('/admin', authenticate, requireRole('admin'), getAdminCourses);
 router.get('/admin/:id', authenticate, requireRole('admin'), getAdminCourseDetail);
 router.get('/:id', optionalAuth, getCourseDetail);

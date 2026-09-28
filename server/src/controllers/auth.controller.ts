@@ -2,7 +2,23 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { User } from '../models/User';
+import { Course } from '../models/Course';
+import { Enrollment } from '../models/Enrollment';
 import { Gamification } from '../models/Gamification';
+
+/** Helper to attach isCourseLocked to user object */
+export const enrichUserWithLockStatus = async (user: any) => {
+  const safeUser = user?.toJSON ? user.toJSON() : { ...user };
+  if (!safeUser?._id) return safeUser;
+
+  const paidEnrollment = await Enrollment.findOne({
+    studentId: safeUser._id,
+    accessType: 'paid',
+  });
+
+  safeUser.isCourseLocked = !!paidEnrollment;
+  return safeUser;
+};
 
 /** Username + password login — returns a mock token compatible with existing auth middleware. */
 export const loginWithPassword = async (req: Request, res: Response) => {
@@ -31,7 +47,7 @@ export const loginWithPassword = async (req: Request, res: Response) => {
     await user.save();
 
     const token = `mock_${user.firebaseUid}`;
-    const safeUser = user.toJSON();
+    const safeUser = await enrichUserWithLockStatus(user);
 
     return res.json({
       success: true,
@@ -69,6 +85,13 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
       user = await User.findOne({ firebaseUid: 'demo_student_uid' });
     }
 
+    if (
+      !user &&
+      (firebaseUid === 'demo_student_paid_uid' || email === 'paidstudent@mars.edu')
+    ) {
+      user = await User.findOne({ firebaseUid: 'demo_student_paid_uid' });
+    }
+
     if (!user && (firebaseUid === 'demo_admin_uid' || email === 'admin@mars.edu')) {
       user = await User.findOne({ firebaseUid: 'demo_admin_uid' });
     }
@@ -90,7 +113,7 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
         role: role === 'admin' ? 'admin' : 'student',
         activeSessionId: sessionId || Math.random().toString(36).substring(2),
         referralCode,
-        preferences: { theme: 'deep-ocean', language: 'en' },
+        preferences: { theme: 'soft-cloud', language: 'en' },
       });
 
       // Initialize gamification profile for student
@@ -122,7 +145,8 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
       }
     }
 
-    return res.json({ success: true, data: user });
+    const enriched = await enrichUserWithLockStatus(user);
+    return res.json({ success: true, data: enriched });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -133,7 +157,8 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
-    return res.json({ success: true, data: req.user });
+    const enriched = await enrichUserWithLockStatus(req.user);
+    return res.json({ success: true, data: enriched });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -153,7 +178,53 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     }
 
     await req.user.save();
-    return res.json({ success: true, data: req.user });
+    const enriched = await enrichUserWithLockStatus(req.user);
+    return res.json({ success: true, data: enriched });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+export const selectCourse = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { courseId } = req.body;
+    if (!courseId) {
+      return res.status(400).json({ success: false, error: 'Course ID is required' });
+    }
+
+    // Verify course exists and is published
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ success: false, error: 'Course not found' });
+    }
+
+    // Check if user has an existing paid enrollment
+    const paidEnrollment = await Enrollment.findOne({
+      studentId: req.user._id,
+      accessType: 'paid',
+    });
+
+    if (paidEnrollment) {
+      return res.status(400).json({
+        success: false,
+        error: 'Your course selection is locked because you have purchased a course.',
+        isCourseLocked: true,
+      });
+    }
+
+    req.user.selectedCourseId = course._id as any;
+    await req.user.save();
+
+    const enriched = await enrichUserWithLockStatus(req.user);
+    return res.json({
+      success: true,
+      message: 'Target course selected successfully',
+      data: enriched,
+    });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }

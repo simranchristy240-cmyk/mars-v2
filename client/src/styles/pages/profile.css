@@ -1,0 +1,245 @@
+/* Profile & settings bento */
+
+.prof-sub {
+  margin-top: 2px;
+}
+
+/* Identity header */
+
+.prof-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+@media (min-width: 720px) {
+  .prof-head {
+    gap: 24px;
+    padding: 28px;
+  }
+}
+
+.prof-avatar {
+  --size: 72px;
+  object-fit: cover;
+  box-shadow: 0 0 0 4px var(--ui-tile-bg), 0 0 0 6px var(--ui-gold);
+}
+
+@media (min-width: 720px) {
+  .prof-avatar {
+    --size: 96px;
+  }
+}
+
+.prof-contact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  min-width: 0;
+}
+
+.prof-contact svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.prof-chips {
+  margin-top: 12px;
+  --gap: 8px;
+}
+
+/* Form */
+
+.prof-form {
+  --gap: 16px;
+}
+
+.prof-readonly:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.prof-save {
+  margin-top: 6px;
+}
+
+.prof-saved {
+  align-items: center;
+  color: var(--success);
+  font-weight: 600;
+  animation: ui-rise 0.3s var(--ui-ease);
+}
+
+/* Theme preview cards */
+
+button.prof-theme {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text-primary);
+}
+
+.prof-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--pv-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pv-text) 10%, transparent);
+  transition: transform 0.25s var(--ui-ease);
+}
+
+.prof-theme:hover .prof-preview {
+  transform: scale(1.02);
+}
+
+.prof-preview-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 38px;
+  padding: 8px;
+  border-radius: 9px;
+  background: var(--pv-accent);
+  overflow: hidden;
+}
+
+.prof-preview-sun {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--pv-gold);
+  opacity: 0.9;
+}
+
+.prof-preview-hero .prof-preview-line {
+  background: var(--pv-bg);
+  opacity: 0.7;
+}
+
+.prof-preview-tiles {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 6px;
+}
+
+.prof-preview-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  height: 34px;
+  padding: 7px;
+  border-radius: 8px;
+  background: var(--pv-tile);
+}
+
+.prof-preview-line {
+  display: block;
+  width: 70%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--pv-text);
+  opacity: 0.55;
+}
+
+.prof-preview-line.is-wide {
+  width: 55%;
+}
+
+.prof-preview-line.is-short {
+  width: 45%;
+}
+
+.prof-preview-bar {
+  display: block;
+  width: 60%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--pv-gold);
+}
+
+.prof-preview-dot {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pv-accent);
+}
+
+.prof-theme-meta {
+  align-items: flex-start;
+  --gap: 10px;
+}
+
+.prof-theme-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.prof-theme-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.prof-theme.is-selected .prof-theme-icon {
+  color: var(--text-primary);
+}
+
+.prof-theme-check {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.prof-theme.is-selected .prof-theme-check {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Admin link + sign out */
+
+a.prof-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--text-primary);
+}
+
+.prof-link-go {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.25s var(--ui-ease), color 0.2s;
+}
+
+.prof-link:hover .prof-link-go {
+  color: var(--text-primary);
+  transform: translate(2px, -2px);
+}
+
+.prof-danger {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.prof-danger .ui-grow {
+  min-width: 200px;
+}

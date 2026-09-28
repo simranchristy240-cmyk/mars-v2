@@ -5,6 +5,7 @@ export interface ILessonDocument extends Document {
   courseId: Schema.Types.ObjectId;
   title: string;
   order: number;
+  accessTier: 'free' | 'basic' | 'plus' | 'premium';
   isPublished: boolean;
   sections: Schema.Types.ObjectId[];
   createdAt: Date;
@@ -17,6 +18,11 @@ const LessonSchema = new Schema<ILessonDocument>(
     courseId: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
     title: { type: String, required: true, trim: true },
     order: { type: Number, required: true },
+    accessTier: {
+      type: String,
+      enum: ['free', 'basic', 'plus', 'premium'],
+      default: 'free',
+    },
     isPublished: { type: Boolean, default: true },
     sections: [{ type: Schema.Types.ObjectId, ref: 'Section' }],
   },

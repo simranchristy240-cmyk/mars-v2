@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AccessTier } from '@mars/shared';
 import api from '../../services/api';
 import {
   ArrowLeft,
@@ -82,10 +83,12 @@ export const CourseBuilder: React.FC = () => {
   const [statusMsg, setStatusMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Course form
+  // Course form (Tiered pricing)
   const [courseTitle, setCourseTitle] = useState('');
   const [courseDesc, setCourseDesc] = useState('');
-  const [coursePrice, setCoursePrice] = useState('999');
+  const [basicPrice, setBasicPrice] = useState('499');
+  const [plusPrice, setPlusPrice] = useState('999');
+  const [premiumPrice, setPremiumPrice] = useState('1499');
   const [coursePublished, setCoursePublished] = useState(true);
 
   // Topic form
@@ -96,6 +99,7 @@ export const CourseBuilder: React.FC = () => {
 
   // Lesson form
   const [lessonTitle, setLessonTitle] = useState('');
+  const [lessonAccessTier, setLessonAccessTier] = useState<AccessTier>('free');
   const [lessonPublished, setLessonPublished] = useState(true);
 
   // Test form
@@ -107,6 +111,7 @@ export const CourseBuilder: React.FC = () => {
   const [testTotalMarks, setTestTotalMarks] = useState('10');
   const [testPassing, setTestPassing] = useState('6');
   const [testNegative, setTestNegative] = useState(false);
+  const [testAccessTier, setTestAccessTier] = useState<AccessTier>('free');
   const [testPublished, setTestPublished] = useState(false);
 
   // Section form
@@ -157,7 +162,12 @@ export const CourseBuilder: React.FC = () => {
     if (!course) return;
     setCourseTitle(course.title || '');
     setCourseDesc(course.description || '');
-    setCoursePrice(String((course.price || 0) / 100));
+    const basicP = course.pricing?.basic?.price ?? course.price ?? 49900;
+    const plusP = course.pricing?.plus?.price ?? (basicP * 2);
+    const premP = course.pricing?.premium?.price ?? (basicP * 3);
+    setBasicPrice(String(Math.round(basicP / 100)));
+    setPlusPrice(String(Math.round(plusP / 100)));
+    setPremiumPrice(String(Math.round(premP / 100)));
     setCoursePublished(!!course.isPublished);
   }, [course?._id]);
 
@@ -180,10 +190,12 @@ export const CourseBuilder: React.FC = () => {
       if (found) {
         setLessonTitle(found.lesson.title || '');
         setLessonPublished(found.lesson.isPublished !== false);
+        setLessonAccessTier(found.lesson.accessTier || 'free');
       }
     } else if (selection.kind === 'new-lesson') {
       setLessonTitle('');
       setLessonPublished(true);
+      setLessonAccessTier('free');
     } else if (selection.kind === 'test') {
       const t = findTest(selection.id);
       if (t) {
@@ -195,6 +207,7 @@ export const CourseBuilder: React.FC = () => {
         setTestTotalMarks(String(t.totalMarks || 0));
         setTestPassing(String(t.passingMarks || 0));
         setTestNegative(!!t.negativeMarkingEnabled);
+        setTestAccessTier(t.accessTier || 'free');
         setTestPublished(!!t.isPublished);
       }
     } else if (selection.kind === 'new-test') {
@@ -208,6 +221,7 @@ export const CourseBuilder: React.FC = () => {
       setTestTotalMarks('10');
       setTestPassing('6');
       setTestNegative(false);
+      setTestAccessTier('free');
       setTestPublished(false);
     } else if (selection.kind === 'section') {
       const found = findSection(selection.id);
@@ -231,16 +245,53 @@ export const CourseBuilder: React.FC = () => {
       <span style={{ marginLeft: 6, fontSize: '0.65rem', color: 'var(--warning)', fontWeight: 700 }}>HIDDEN</span>
     );
 
+  const tierBadge = (tier?: string) => {
+    const t = tier || 'free';
+    const colors: Record<string, { bg: string; color: string; label: string }> = {
+      free: { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', label: 'FREE' },
+      basic: { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', label: 'BASIC' },
+      plus: { bg: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', label: 'PLUS' },
+      premium: { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', label: 'PREM' },
+    };
+    const conf = colors[t] || colors.free;
+    return (
+      <span
+        style={{
+          marginLeft: 6,
+          padding: '1px 6px',
+          borderRadius: 4,
+          fontSize: '0.62rem',
+          fontWeight: 800,
+          letterSpacing: '0.04em',
+          background: conf.bg,
+          color: conf.color,
+          flexShrink: 0,
+        }}
+      >
+        {conf.label}
+      </span>
+    );
+  };
+
   // --- Create course (no id yet) ---
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setStatusMsg('');
     try {
+      const bPrice = Math.max(0, parseInt(basicPrice, 10) || 0) * 100;
+      const pPrice = Math.max(0, parseInt(plusPrice, 10) || 0) * 100;
+      const premPrice = Math.max(0, parseInt(premiumPrice, 10) || 0) * 100;
+
       const res = await api.post('/courses', {
         title: courseTitle,
         description: courseDesc,
-        price: parseInt(coursePrice, 10) * 100,
+        price: bPrice,
+        pricing: {
+          basic: { price: bPrice },
+          plus: { price: pPrice },
+          premium: { price: premPrice },
+        },
         isPublished: coursePublished,
       });
       const id = res.data.data._id;
@@ -259,10 +310,19 @@ export const CourseBuilder: React.FC = () => {
     if (!courseId) return handleCreateCourse(e);
     setSaving(true);
     try {
+      const bPrice = Math.max(0, parseInt(basicPrice, 10) || 0) * 100;
+      const pPrice = Math.max(0, parseInt(plusPrice, 10) || 0) * 100;
+      const premPrice = Math.max(0, parseInt(premiumPrice, 10) || 0) * 100;
+
       await api.put(`/courses/${courseId}`, {
         title: courseTitle,
         description: courseDesc,
-        price: parseInt(coursePrice, 10) * 100,
+        price: bPrice,
+        pricing: {
+          basic: { price: bPrice },
+          plus: { price: pPrice },
+          premium: { price: premPrice },
+        },
         isPublished: coursePublished,
       });
       setStatusMsg('Course details saved.');
@@ -331,6 +391,7 @@ export const CourseBuilder: React.FC = () => {
           topicId: selection.topicId,
           courseId,
           title: lessonTitle,
+          accessTier: lessonAccessTier,
           isPublished: lessonPublished,
           order: (topic?.lessons?.length || 0) + 1,
         });
@@ -340,6 +401,7 @@ export const CourseBuilder: React.FC = () => {
       } else if (selection.kind === 'lesson') {
         await api.put(`/lessons/lessons/${selection.id}`, {
           title: lessonTitle,
+          accessTier: lessonAccessTier,
           isPublished: lessonPublished,
         });
         setStatusMsg('Lesson saved.');
@@ -436,6 +498,7 @@ export const CourseBuilder: React.FC = () => {
         totalMarks: parseInt(testTotalMarks, 10) || 0,
         passingMarks: parseInt(testPassing, 10) || 0,
         negativeMarkingEnabled: testNegative,
+        accessTier: testAccessTier,
         isPublished: testPublished,
       };
       if (selection.kind === 'new-test') {
@@ -510,8 +573,12 @@ export const CourseBuilder: React.FC = () => {
             setTitle={setCourseTitle}
             desc={courseDesc}
             setDesc={setCourseDesc}
-            price={coursePrice}
-            setPrice={setCoursePrice}
+            basicPrice={basicPrice}
+            setBasicPrice={setBasicPrice}
+            plusPrice={plusPrice}
+            setPlusPrice={setPlusPrice}
+            premiumPrice={premiumPrice}
+            setPremiumPrice={setPremiumPrice}
             published={coursePublished}
             setPublished={setCoursePublished}
           />
@@ -594,6 +661,7 @@ export const CourseBuilder: React.FC = () => {
                         onClick={() => setSelection({ kind: 'lesson', id: l._id, topicId: t._id })}
                       >
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</span>
+                        {tierBadge(l.accessTier)}
                         {publishBadge(l.isPublished !== false)}
                       </button>
                     </div>
@@ -608,6 +676,7 @@ export const CourseBuilder: React.FC = () => {
                           >
                             {s.type === 'video' ? <Video size={12} /> : <FileQuestion size={12} />}
                             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel(s)}</span>
+                            {tierBadge(s.accessTier)}
                             {publishBadge(s.isPublished !== false)}
                           </button>
                         ))}
@@ -651,6 +720,7 @@ export const CourseBuilder: React.FC = () => {
                         onClick={() => setSelection({ kind: 'section', id: q._id, parentKind: 'practice', parentId: t._id })}
                       >
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel(q)}</span>
+                        {tierBadge(q.accessTier)}
                         {publishBadge(q.isPublished !== false)}
                       </button>
                     ))}
@@ -692,6 +762,7 @@ export const CourseBuilder: React.FC = () => {
                 onClick={() => setSelection({ kind: 'test', id: test._id })}
               >
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{test.title}</span>
+                {tierBadge(test.accessTier)}
                 {publishBadge(!!test.isPublished)}
               </button>
             </div>
@@ -707,6 +778,7 @@ export const CourseBuilder: React.FC = () => {
                         onClick={() => setSelection({ kind: 'section', id: q._id, parentKind: 'test', parentId: test._id })}
                       >
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel(q)}</span>
+                        {tierBadge(q.accessTier)}
                         {publishBadge(q.isPublished !== false)}
                       </button>
                     ) : null
@@ -757,8 +829,12 @@ export const CourseBuilder: React.FC = () => {
                 setTitle={setCourseTitle}
                 desc={courseDesc}
                 setDesc={setCourseDesc}
-                price={coursePrice}
-                setPrice={setCoursePrice}
+                basicPrice={basicPrice}
+                setBasicPrice={setBasicPrice}
+                plusPrice={plusPrice}
+                setPlusPrice={setPlusPrice}
+                premiumPrice={premiumPrice}
+                setPremiumPrice={setPremiumPrice}
                 published={coursePublished}
                 setPublished={setCoursePublished}
               />
@@ -829,6 +905,24 @@ export const CourseBuilder: React.FC = () => {
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Title</label>
                 <input type="text" required value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} style={inputStyle} />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6, fontWeight: 600 }}>
+                  Required Access Tier
+                </label>
+                <select
+                  value={lessonAccessTier}
+                  onChange={(e) => setLessonAccessTier(e.target.value as AccessTier)}
+                  style={inputStyle}
+                >
+                  <option value="free">Free Preview (Available to all students)</option>
+                  <option value="basic">Basic (Basic, Plus, and Premium plans)</option>
+                  <option value="plus">Plus (Plus and Premium plans)</option>
+                  <option value="premium">Premium (Premium plan only)</option>
+                </select>
+                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Students below this tier will see a lock and will be prompted to upgrade.
+                </span>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: 'pointer', marginBottom: 18 }}>
                 <input type="checkbox" checked={lessonPublished} onChange={(e) => setLessonPublished(e.target.checked)} style={{ width: 18, height: 18 }} />
@@ -959,6 +1053,24 @@ export const CourseBuilder: React.FC = () => {
                   <input type="datetime-local" value={testEnd} onChange={(e) => setTestEnd(e.target.value)} style={inputStyle} />
                 </div>
               </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6, fontWeight: 600 }}>
+                  Required Access Tier
+                </label>
+                <select
+                  value={testAccessTier}
+                  onChange={(e) => setTestAccessTier(e.target.value as AccessTier)}
+                  style={inputStyle}
+                >
+                  <option value="free">Free Preview (Available to all students)</option>
+                  <option value="basic">Basic (Basic, Plus, and Premium plans)</option>
+                  <option value="plus">Plus (Plus and Premium plans)</option>
+                  <option value="premium">Premium (Premium plan only)</option>
+                </select>
+                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Students below this tier will see a lock and will be prompted to upgrade.
+                </span>
+              </div>
               <div style={{ display: 'flex', gap: 20, marginBottom: 18 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: 'pointer' }}>
                   <input type="checkbox" checked={testNegative} onChange={(e) => setTestNegative(e.target.checked)} style={{ width: 18, height: 18 }} />
@@ -1001,11 +1113,28 @@ const CourseFields: React.FC<{
   setTitle: (v: string) => void;
   desc: string;
   setDesc: (v: string) => void;
-  price: string;
-  setPrice: (v: string) => void;
+  basicPrice: string;
+  setBasicPrice: (v: string) => void;
+  plusPrice: string;
+  setPlusPrice: (v: string) => void;
+  premiumPrice: string;
+  setPremiumPrice: (v: string) => void;
   published: boolean;
   setPublished: (v: boolean) => void;
-}> = ({ title, setTitle, desc, setDesc, price, setPrice, published, setPublished }) => (
+}> = ({
+  title,
+  setTitle,
+  desc,
+  setDesc,
+  basicPrice,
+  setBasicPrice,
+  plusPrice,
+  setPlusPrice,
+  premiumPrice,
+  setPremiumPrice,
+  published,
+  setPublished,
+}) => (
   <>
     <div style={{ marginBottom: 14 }}>
       <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Course Title</label>
@@ -1020,10 +1149,62 @@ const CourseFields: React.FC<{
         placeholder="Course description…"
       />
     </div>
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Price (₹ INR)</label>
-      <input type="number" required value={price} onChange={(e) => setPrice(e.target.value)} style={inputStyle} />
+
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 8, fontWeight: 700 }}>
+        Tiered Pricing (₹ INR)
+      </label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <div style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent)' }}>Basic Tier</span>
+            <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: 4, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', fontWeight: 800 }}>TIER 1</span>
+          </div>
+          <input
+            type="number"
+            required
+            value={basicPrice}
+            onChange={(e) => setBasicPrice(e.target.value)}
+            style={inputStyle}
+            placeholder="499"
+          />
+          <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>Standard curriculum</span>
+        </div>
+
+        <div style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#a855f7' }}>Plus Tier</span>
+            <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: 4, background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', fontWeight: 800 }}>TIER 2</span>
+          </div>
+          <input
+            type="number"
+            required
+            value={plusPrice}
+            onChange={(e) => setPlusPrice(e.target.value)}
+            style={inputStyle}
+            placeholder="999"
+          />
+          <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>Full practice Q-bank</span>
+        </div>
+
+        <div style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b' }}>Premium Tier</span>
+            <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 800 }}>TIER 3</span>
+          </div>
+          <input
+            type="number"
+            required
+            value={premiumPrice}
+            onChange={(e) => setPremiumPrice(e.target.value)}
+            style={inputStyle}
+            placeholder="1499"
+          />
+          <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>Full mocks & mentorship</span>
+        </div>
+      </div>
     </div>
+
     <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
       <input
         type="checkbox"

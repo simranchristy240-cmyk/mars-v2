@@ -3,6 +3,7 @@ import { Schema, model, Document } from 'mongoose';
 export interface IPaymentDocument extends Document {
   studentId: Schema.Types.ObjectId;
   courseId: Schema.Types.ObjectId;
+  tier?: 'basic' | 'plus' | 'premium';
   amount: number;
   currency: string;
   razorpayOrderId: string;
@@ -19,6 +20,11 @@ const PaymentSchema = new Schema<IPaymentDocument>(
   {
     studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     courseId: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+    tier: {
+      type: String,
+      enum: ['basic', 'plus', 'premium'],
+      default: 'basic',
+    },
     amount: { type: Number, required: true },
     currency: { type: String, default: 'INR' },
     razorpayOrderId: { type: String, required: true },

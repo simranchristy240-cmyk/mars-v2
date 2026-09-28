@@ -10,6 +10,7 @@ export interface ITestDocument extends Document {
   totalMarks: number;
   passingMarks?: number;
   negativeMarkingEnabled: boolean;
+  accessTier?: 'free' | 'basic' | 'plus' | 'premium';
   sections: Array<{
     name: string;
     questions: Schema.Types.ObjectId[];
@@ -31,6 +32,11 @@ const TestSchema = new Schema<ITestDocument>(
     totalMarks: { type: Number, required: true, default: 0 },
     passingMarks: { type: Number },
     negativeMarkingEnabled: { type: Boolean, default: false },
+    accessTier: {
+      type: String,
+      enum: ['free', 'basic', 'plus', 'premium'],
+      default: 'free',
+    },
     sections: [
       {
         name: { type: String, required: true },

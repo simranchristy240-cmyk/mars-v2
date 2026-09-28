@@ -1,82 +1,164 @@
-/* Soft Cloud Theme (Light, Warm Whites & Gentle Blues) */
-[data-theme='soft-cloud'] {
-  --bg-primary: #f4f6fc;
-  --bg-secondary: #ffffff;
-  --bg-surface: rgba(255, 255, 255, 0.9);
-  --bg-card: #ffffff;
-  --border-color: rgba(9, 9, 65, 0.08);
-  --border-glow: rgba(79, 70, 229, 0.4);
-  --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+/* Soft Cloud — warm paper canvas, white bento tiles, logo navy ink, sunburst gold */
+html[data-theme='soft-cloud'] {
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
 
-  --text-primary: #090941;
-  --text-secondary: #4a507a;
-  --text-muted: #8c93be;
+  --bg-primary: #fbfaf7;
+  --bg-gradient:
+    radial-gradient(rgba(9, 9, 65, 0.045) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    radial-gradient(ellipse 60% 50% at 100% 0%, rgba(226, 174, 42, 0.1) 0%, transparent 70%),
+    radial-gradient(ellipse 55% 45% at 0% 100%, rgba(9, 9, 65, 0.04) 0%, transparent 70%),
+    linear-gradient(180deg, #fcfbf9 0%, #f7f5f0 100%);
+  --bg-secondary: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --border-color: rgba(9, 9, 65, 0.1);
+  --border-glow: rgba(9, 9, 65, 0.28);
+  --accent-gradient: #090941;
+
+  --text-primary: #0b0b3b;
+  --text-secondary: #44486a;
+  --text-muted: #6f7390;
   --on-accent: #ffffff;
 
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-light: rgba(79, 70, 229, 0.1);
+  --accent: #090941;
+  --accent-hover: #1a1a5e;
+  --accent-light: rgba(9, 9, 65, 0.05);
 
-  --success: #059669;
-  --success-light: rgba(5, 150, 105, 0.1);
-  --warning: #d97706;
-  --warning-light: rgba(217, 119, 6, 0.1);
-  --error: #dc2626;
-  --error-light: rgba(220, 38, 38, 0.1);
+  --success: #1f8a5b;
+  --success-light: #e6f4ec;
+  --warning: #b7791f;
+  --warning-light: #fbf0dc;
+  --error: #c2352b;
+  --error-light: #fbe9e7;
 
-  --gold: #d97706;
-  --streak-fire: #ea580c;
+  --gold: #e2ae2a;
+  --gold-ink: #8f6a0c;
+  --gold-soft: #fbf1d6;
+  --streak-fire: #e2ae2a;
 
-  --card-shadow: 0 8px 24px rgba(9, 9, 65, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --card-shadow-hover: 0 12px 32px rgba(9, 9, 65, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1);
-  --divider: rgba(9, 9, 65, 0.08);
-  --track-bg: rgba(9, 9, 65, 0.06);
-  --scrollbar-thumb: rgba(9, 9, 65, 0.18);
-  --logo-glow: 0 4px 16px rgba(79, 70, 229, 0.2);
+  --tile-bg: #ffffff;
+  --tile-muted: #f7f4ee;
+  --tile-inverse-bg: #090941;
+  --tile-inverse-text: #ffffff;
+  --tile-inverse-muted: rgba(255, 255, 255, 0.68);
+  --tile-border: rgba(9, 9, 65, 0.09);
+  --tile-shadow: 0 1px 2px rgba(9, 9, 65, 0.05), 0 6px 16px -6px rgba(9, 9, 65, 0.14);
+  --tile-shadow-hover: 0 2px 4px rgba(9, 9, 65, 0.06), 0 14px 28px -8px rgba(9, 9, 65, 0.2);
+  --logo-bg: transparent;
 
-  --nav-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(244, 246, 252, 0.96) 100%);
-  --nav-border: rgba(9, 9, 65, 0.1);
-  --nav-shadow: 0 12px 32px rgba(9, 9, 65, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.9);
-  --nav-active-bg: rgba(79, 70, 229, 0.12);
-  --nav-active-border: rgba(79, 70, 229, 0.35);
-  --nav-active-shadow: 0 4px 12px rgba(79, 70, 229, 0.18);
-  --nav-active-color: #4f46e5;
-  --nav-inactive-color: rgba(74, 80, 122, 0.65);
+  --card-shadow: var(--tile-shadow);
+  --card-shadow-hover: var(--tile-shadow-hover);
+  --shadow-sm: 0 1px 2px rgba(9, 9, 65, 0.05);
+  --shadow-md: 0 8px 24px -8px rgba(9, 9, 65, 0.14);
+  --shadow-lg: 0 24px 48px -16px rgba(9, 9, 65, 0.22);
+  --divider: rgba(9, 9, 65, 0.09);
+  --track-bg: rgba(9, 9, 65, 0.08);
+  --scrollbar-thumb: rgba(9, 9, 65, 0.14);
+  --logo-glow: none;
 
-  --gamification-bg: linear-gradient(135deg, rgba(234, 88, 12, 0.1) 0%, rgba(79, 70, 229, 0.08) 50%, rgba(255, 255, 255, 0.95) 100%);
-  --gamification-border: rgba(217, 119, 6, 0.28);
-  --gamification-ember: #ea580c;
-  --gamification-gold: #d97706;
-  --gamification-bar: linear-gradient(90deg, #ea580c 0%, #d97706 100%);
-  --gamification-shadow: 0 10px 28px rgba(9, 9, 65, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --streak-icon-bg: rgba(234, 88, 12, 0.12);
-  --streak-icon-border: rgba(234, 88, 12, 0.35);
-  --streak-label: #ea580c;
-  --xp-icon-bg: rgba(217, 119, 6, 0.12);
-  --xp-icon-border: rgba(217, 119, 6, 0.35);
-  --xp-label: #d97706;
-  --level-bg: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(255, 255, 255, 0.95) 100%);
-  --level-border: rgba(79, 70, 229, 0.3);
-  --level-icon: #6366f1;
-  --level-label: #4f46e5;
-  --level-shadow: 0 8px 20px rgba(79, 70, 229, 0.1);
-  --leaderboard-gold-bg: rgba(217, 119, 6, 0.12);
+  --nav-bg: #ffffff;
+  --nav-border: rgba(9, 9, 65, 0.08);
+  --nav-shadow: 0 1px 2px rgba(9, 9, 65, 0.05), 0 8px 20px -8px rgba(9, 9, 65, 0.16);
+  --nav-active-bg: #090941;
+  --nav-active-border: #090941;
+  --nav-active-shadow: none;
+  --nav-active-color: #ffffff;
+  --nav-inactive-color: #6b6f88;
 
-  --course-enrolled-bg: linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, rgba(79, 70, 229, 0.06) 50%, rgba(255, 255, 255, 0.96) 100%);
-  --course-enrolled-border: rgba(5, 150, 105, 0.28);
-  --course-enrolled-glow: #059669;
-  --course-emerald: #059669;
-  --course-progress-bar: linear-gradient(90deg, #059669 0%, #4f46e5 100%);
-  --course-play-btn: linear-gradient(135deg, #059669 0%, #4f46e5 100%);
-  --course-play-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
-  --course-enrolled-shadow: 0 12px 28px rgba(9, 9, 65, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --gamification-bg: #ffffff;
+  --gamification-border: rgba(9, 9, 65, 0.06);
+  --gamification-ember: #e2ae2a;
+  --gamification-gold: #e2ae2a;
+  --gamification-bar: #e2ae2a;
+  --gamification-shadow: var(--tile-shadow);
+  --streak-icon-bg: #fbf1d6;
+  --streak-icon-border: transparent;
+  --streak-label: #8f6a0c;
+  --xp-icon-bg: #fbf1d6;
+  --xp-icon-border: transparent;
+  --xp-label: #8f6a0c;
+  --level-bg: #ffffff;
+  --level-border: rgba(9, 9, 65, 0.06);
+  --level-icon: #e2ae2a;
+  --level-label: #090941;
+  --level-shadow: none;
+  --leaderboard-gold-bg: #fbf1d6;
 
-  --course-catalog-bg: rgba(255, 255, 255, 0.92);
-  --course-catalog-border: rgba(79, 70, 229, 0.2);
-  --course-catalog-icon-bg: linear-gradient(135deg, rgba(79, 70, 229, 0.16) 0%, rgba(99, 102, 241, 0.12) 100%);
-  --course-catalog-accent: #4f46e5;
-  --course-catalog-icon-border: rgba(79, 70, 229, 0.28);
-  --course-catalog-shadow: 0 8px 22px rgba(9, 9, 65, 0.06);
-  --price-badge-bg: rgba(5, 150, 105, 0.1);
-  --price-badge-border: rgba(5, 150, 105, 0.28);
+  --course-enrolled-bg: #ffffff;
+  --course-enrolled-border: rgba(9, 9, 65, 0.06);
+  --course-enrolled-glow: #e2ae2a;
+  --course-emerald: #1f8a5b;
+  --course-progress-bar: #090941;
+  --course-play-btn: #090941;
+  --course-play-shadow: none;
+  --course-enrolled-shadow: var(--tile-shadow);
+
+  --course-catalog-bg: #ffffff;
+  --course-catalog-border: rgba(9, 9, 65, 0.06);
+  --course-catalog-icon-bg: #ece9e1;
+  --course-catalog-accent: #090941;
+  --course-catalog-icon-border: transparent;
+  --course-catalog-shadow: var(--tile-shadow);
+  --price-badge-bg: #e6f4ec;
+  --price-badge-border: transparent;
+}
+
+/* Top bar sits above the page: solid white, a small drop shadow */
+html[data-theme='soft-cloud'] .shell-topbar {
+  background: #ffffff;
+  border-bottom: none;
+  box-shadow: 0 1px 0 rgba(9, 9, 65, 0.06), 0 8px 22px -10px rgba(9, 9, 65, 0.16);
+}
+
+html[data-theme='soft-cloud'] .shell-pillnav {
+  background: #f3f1eb;
+  box-shadow: inset 0 0 0 1px rgba(9, 9, 65, 0.05), 0 2px 6px rgba(9, 9, 65, 0.06);
+}
+
+html[data-theme='soft-cloud'] .shell-pillnav a.is-active {
+  box-shadow: 0 2px 8px rgba(9, 9, 65, 0.22);
+}
+
+html[data-theme='soft-cloud'] .shell-track,
+html[data-theme='soft-cloud'] .shell-logo {
+  box-shadow: 0 1px 2px rgba(9, 9, 65, 0.05), 0 4px 10px -4px rgba(9, 9, 65, 0.12);
+}
+
+html[data-theme='soft-cloud'] .ui-tile.is-muted {
+  box-shadow: var(--tile-shadow);
+}
+
+/* Oversized logo sunburst drifting behind the content */
+html[data-theme='soft-cloud'] body::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  top: -38vmax;
+  right: -30vmax;
+  width: 90vmax;
+  height: 90vmax;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 190deg at 50% 50%,
+    rgba(226, 174, 42, 0.1) 0deg 3deg,
+    transparent 3deg 11deg
+  );
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 0 16%, #000 17% 42%, transparent 62%);
+  mask: radial-gradient(circle at 50% 50%, transparent 0 16%, #000 17% 42%, transparent 62%);
+  animation: soft-cloud-rays 120s linear infinite;
+}
+
+@keyframes soft-cloud-rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme='soft-cloud'] body::before {
+    animation: none;
+  }
 }

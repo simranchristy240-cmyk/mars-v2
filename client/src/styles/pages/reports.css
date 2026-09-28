@@ -1,0 +1,192 @@
+/* Progress (reports) bento */
+
+.rep-sub {
+  margin-top: 2px;
+}
+
+/* Average score hero */
+
+.rep-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 280px;
+}
+
+.rep-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.rep-hero > .ui-sunburst {
+  position: absolute;
+  z-index: 0;
+}
+
+.rep-hero-body {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.rep-hero-ring {
+  display: flex;
+  align-items: baseline;
+  font-size: 2.2rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.rep-hero-ring span {
+  font-size: 0.9rem;
+  margin-left: 2px;
+  color: var(--ui-inverse-muted);
+}
+
+.rep-hero-line {
+  flex: 1;
+  min-width: 160px;
+  font-family: var(--font-family-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+/* Score trend chart */
+
+.rep-trend {
+  display: flex;
+  flex-direction: column;
+}
+
+.rep-chart {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  height: 190px;
+  margin-top: auto;
+  border-bottom: 1px solid var(--divider);
+}
+
+@media (min-width: 720px) {
+  .rep-chart {
+    gap: 10px;
+  }
+}
+
+.rep-chart-goal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--border-glow, var(--divider));
+  pointer-events: none;
+}
+
+.rep-chart-goal span {
+  position: absolute;
+  right: 0;
+  top: -18px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rep-chart-col {
+  flex: 1;
+  max-width: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.rep-chart-bar {
+  display: block;
+  width: 100%;
+  border-radius: 10px 10px 4px 4px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--track-bg));
+  transform-origin: bottom;
+  animation: rep-grow 0.6s var(--ui-ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transition: background 0.2s;
+}
+
+.rep-chart-col:hover .rep-chart-bar {
+  background: var(--accent);
+}
+
+.rep-chart-bar.is-latest {
+  background: var(--ui-gold);
+}
+
+@keyframes rep-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* Metrics */
+
+.rep-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .rep-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+.rep-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 136px;
+}
+
+.rep-metric .ui-label {
+  line-height: 1.3;
+}
+
+.rep-metric-value {
+  margin-top: auto;
+  font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+}
+
+/* Course + test lists */
+
+.rep-course {
+  gap: 16px;
+}
+
+.rep-course-ring {
+  font-size: 0.8rem;
+}
+
+.rep-course-bar {
+  margin-top: 10px;
+}
+
+.rep-test-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.rep-test-bar .ui-progress {
+  flex: 1;
+  max-width: 200px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rep-chart-bar {
+    animation: none;
+  }
+}

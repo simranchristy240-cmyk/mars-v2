@@ -1,5 +1,7 @@
 export type UserRole = 'student' | 'admin';
 
+export type AccessTier = 'free' | 'basic' | 'plus' | 'premium';
+
 export type AppTheme = 'deep-ocean' | 'soft-cloud' | 'sunset-calm' | 'lunar-drift' | 'silk-paper';
 
 export interface IUser {
@@ -11,6 +13,8 @@ export interface IUser {
   phone?: string;
   avatar?: string;
   role: UserRole;
+  selectedCourseId?: string;
+  isCourseLocked?: boolean;
   activeSessionId?: string;
   preferences: {
     theme: AppTheme;
@@ -22,19 +26,36 @@ export interface IUser {
   updatedAt: string;
 }
 
+export interface ICoursePricing {
+  basic: { price: number };
+  plus: { price: number };
+  premium: { price: number };
+}
+
 export interface ICourse {
   _id: string;
   title: string;
   description: string;
   thumbnail: string;
-  price: number; // in paisa (e.g. 99900 = ₹999)
+  price: number; // in paisa (e.g. 99900 = ₹999) - backward compatibility
   currency: string;
+  pricing?: ICoursePricing;
   topics: string[]; // Topic IDs
   testSeries: string[]; // Test IDs
   isPublished: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface IPracticeSet {
+  _id: string;
+  title: string;
+  description?: string;
+  accessTier?: AccessTier;
+  isPublished?: boolean;
+  order?: number;
+  questions: string[]; // Section IDs (question type)
 }
 
 export interface ITopic {
@@ -45,7 +66,8 @@ export interface ITopic {
   order: number;
   isFree: boolean;
   lessons: string[]; // Lesson IDs
-  practiceQuestions: string[]; // Section IDs (question type)
+  practiceQuestions?: string[]; // Section IDs (legacy single bank)
+  practiceSets?: IPracticeSet[];
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +78,7 @@ export interface ILesson {
   courseId: string;
   title: string;
   order: number;
+  accessTier?: AccessTier;
   sections: string[]; // Section IDs
   createdAt: string;
   updatedAt: string;
@@ -79,6 +102,7 @@ export interface IMatchPair {
 export interface ISection {
   _id: string;
   type: SectionType;
+  accessTier?: AccessTier;
   // Video fields
   vimeoVideoId?: string;
   videoStartTime?: number; // seconds
@@ -118,6 +142,7 @@ export interface ITest {
   totalMarks: number;
   passingMarks?: number;
   negativeMarkingEnabled: boolean;
+  accessTier?: AccessTier;
   sections: ITestSection[];
   isPublished: boolean;
   createdBy: string;
@@ -223,6 +248,7 @@ export interface IPayment {
   _id: string;
   studentId: string;
   courseId: string;
+  tier?: 'basic' | 'plus' | 'premium';
   amount: number;
   currency: string;
   razorpayOrderId: string;
@@ -239,6 +265,7 @@ export interface IEnrollment {
   _id: string;
   studentId: string;
   courseId: string;
+  tier?: 'basic' | 'plus' | 'premium';
   paymentId?: string;
   enrolledAt: string;
   accessType: 'free' | 'paid';

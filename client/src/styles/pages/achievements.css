@@ -1,0 +1,291 @@
+/* Rank (achievements + leaderboard) bento */
+
+.ach-sub {
+  margin-top: 2px;
+}
+
+/* Level hero */
+
+.ach-hero {
+  display: flex;
+  align-items: center;
+  min-height: 260px;
+  padding: 28px;
+}
+
+@media (min-width: 720px) {
+  .ach-hero {
+    padding: 36px;
+  }
+}
+
+.ach-hero-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 24px 32px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.ach-hero-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.ach-hero-ring span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ui-inverse-muted);
+  margin-bottom: 4px;
+}
+
+.ach-hero-copy {
+  min-width: 200px;
+}
+
+.ach-hero-xp {
+  margin-top: 8px;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+}
+
+.ach-hero-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  max-width: 380px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-inverse-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ach-hero-progress .ui-progress {
+  flex: 1;
+  min-width: 140px;
+}
+
+.ach-hero-chips {
+  margin-top: 18px;
+  --gap: 8px;
+}
+
+.ach-hero-chips .ach-rank-chip {
+  background: var(--ui-gold);
+  color: #1a1406;
+}
+
+/* Streak */
+
+.ach-streak {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ach-streak .ui-label {
+  color: var(--ui-gold-ink);
+}
+
+.ach-flame {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ui-gold);
+  color: #1a1406;
+}
+
+.ach-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: auto;
+}
+
+.ach-week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--ui-gold-ink);
+  opacity: 0.7;
+}
+
+.ach-week-dot {
+  width: 100%;
+  max-width: 30px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-gold) 22%, transparent);
+  color: #1a1406;
+}
+
+.ach-week-day.is-active {
+  opacity: 1;
+}
+
+.ach-week-day.is-active .ach-week-dot {
+  background: var(--ui-gold);
+}
+
+.ach-week-day.is-today .ach-week-dot {
+  box-shadow: 0 0 0 2px var(--ui-tile-muted), 0 0 0 3.5px var(--ui-gold);
+}
+
+/* Badges */
+
+.ach-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  transition: transform 0.25s var(--ui-ease);
+}
+
+.ach-badge:hover {
+  transform: translateY(-2px);
+}
+
+.ach-badge-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  border-radius: 16px;
+  background: var(--ui-gold-soft);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-gold) 35%, transparent);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.ach-badge-date {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ui-gold-ink);
+}
+
+/* Leaderboard */
+
+.ach-board {
+  gap: 4px;
+}
+
+.ach-row {
+  --medal: var(--track-bg);
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: none;
+  border-radius: 16px;
+  border: 1px solid transparent;
+}
+
+.ach-row.is-gold {
+  --medal: var(--ui-gold);
+  background: var(--ui-gold-soft);
+}
+
+.ach-row.is-silver {
+  --medal: color-mix(in srgb, var(--text-muted) 55%, var(--ui-tile-muted));
+  background: var(--ui-tile-muted);
+}
+
+.ach-row.is-bronze {
+  --medal: color-mix(in srgb, var(--ui-gold) 40%, var(--text-secondary));
+  background: color-mix(in srgb, var(--ui-tile-muted) 60%, transparent);
+}
+
+.ach-row.is-me {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.ach-rank {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--medal);
+  font-family: var(--font-family-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ach-rank.is-gold {
+  color: #1a1406;
+}
+
+.ach-rank.is-silver,
+.ach-rank.is-bronze {
+  color: var(--bg-primary);
+}
+
+.ach-avatar {
+  --size: 36px;
+  object-fit: cover;
+}
+
+.ach-you {
+  height: 20px;
+  margin-left: 8px;
+  padding: 0 8px;
+  font-size: 0.64rem;
+  vertical-align: middle;
+}
+
+.ach-row-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ach-row-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ach-xp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-family: var(--font-family-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ach-xp svg {
+  color: var(--ui-gold);
+}
+
+.ach-xp small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}

@@ -1,0 +1,351 @@
+/* Shared modals — goal (track) picker + tier upgrade */
+
+.mdl-backdrop {
+  z-index: 9999;
+}
+
+.mdl-head {
+  padding-right: 64px;
+}
+
+.mdl-title {
+  margin-top: 12px;
+}
+
+.mdl-sub {
+  margin-top: 6px;
+  max-width: 560px;
+}
+
+.mdl-error {
+  margin-bottom: 16px;
+  color: var(--error);
+  font-size: 0.86rem;
+}
+
+.mdl-success {
+  align-items: center;
+  margin-bottom: 16px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.mdl-success svg {
+  flex-shrink: 0;
+}
+
+.mdl-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  align-items: center;
+  padding-top: 16px;
+  background: var(--ui-tile-bg);
+  border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 600px) {
+  .mdl-foot .ui-btn {
+    flex: 1;
+  }
+}
+
+/* ─── Goal selection ──────────────────────────────────────────────────── */
+
+.mdl-tracks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 620px) {
+  .mdl-tracks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ui-tile.is-interactive.mdl-track {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  color: var(--text-primary);
+}
+
+.mdl-radio {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-glow, var(--border-color));
+  color: var(--on-accent);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s var(--ui-ease);
+}
+
+.mdl-track.is-selected .mdl-radio {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.mdl-track .ui-icon-box {
+  transition: background 0.2s, color 0.2s;
+}
+
+.mdl-track-title {
+  display: block;
+  margin-top: 16px;
+}
+
+.mdl-track-desc {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.mdl-track-chips {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+
+/* ─── Tier upgrade ────────────────────────────────────────────────────── */
+
+.mdl-course-chip {
+  max-width: 100%;
+}
+
+.mdl-plans {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 820px) {
+  .mdl-plans {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+.mdl-plan {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s var(--ui-ease), box-shadow 0.25s var(--ui-ease), background 0.25s var(--ui-ease),
+    border-color 0.25s var(--ui-ease);
+}
+
+.mdl-plan.is-selectable {
+  cursor: pointer;
+}
+
+.mdl-plan.is-selectable:not(.is-inverse):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ui-tile-shadow-hover);
+  border-color: var(--border-glow, var(--border-color));
+}
+
+.mdl-plan.is-inverse {
+  box-shadow: var(--ui-tile-shadow-hover);
+}
+
+@media (min-width: 820px) {
+  .mdl-plan.is-inverse {
+    transform: translateY(-6px);
+  }
+}
+
+.mdl-plan.is-current {
+  border-color: var(--success);
+  box-shadow: 0 0 0 1px var(--success), var(--ui-tile-shadow);
+}
+
+.mdl-plan.is-lower {
+  opacity: 0.55;
+}
+
+.mdl-plan > *:not(.mdl-plan-rays) {
+  position: relative;
+  z-index: 1;
+}
+
+.mdl-plan-rays {
+  width: 220px;
+  height: 220px;
+  right: -80px;
+  top: -90px;
+  opacity: 0.7;
+}
+
+.mdl-plan-head {
+  margin-bottom: 18px;
+}
+
+.mdl-plan-name {
+  font-size: 1.25rem;
+}
+
+.mdl-plan-tagline {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.82rem;
+}
+
+.mdl-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.mdl-price-value {
+  font-family: var(--font-family-heading);
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mdl-price-currency {
+  font-size: 0.6em;
+  font-weight: 600;
+  margin-right: 2px;
+  vertical-align: 0.35em;
+}
+
+.mdl-price-was {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.mdl-price-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mdl-price-note.is-upgrade {
+  color: var(--success);
+}
+
+.mdl-features {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0 22px;
+  padding: 18px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--divider);
+}
+
+.mdl-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.mdl-feature-check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.mdl-plan-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 50px;
+  border-radius: 999px;
+  background: var(--ui-tile-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.mdl-plan-state.is-current {
+  background: var(--success-light);
+  color: var(--success);
+  font-weight: 700;
+}
+
+/* Inverse (highlighted) plan */
+
+.mdl-plan.is-inverse .mdl-price-was,
+.mdl-plan.is-inverse .mdl-price-note,
+.mdl-plan.is-inverse .mdl-features li {
+  color: var(--ui-inverse-muted);
+}
+
+.mdl-plan.is-inverse .mdl-price-note.is-upgrade {
+  color: var(--ui-gold);
+}
+
+.mdl-plan.is-inverse .mdl-features {
+  border-top-color: color-mix(in srgb, var(--ui-inverse-text) 14%, transparent);
+}
+
+.mdl-plan.is-inverse .mdl-feature-check {
+  background: color-mix(in srgb, var(--ui-gold) 24%, transparent);
+  color: var(--ui-gold);
+}
+
+.mdl-trust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.mdl-track,
+.mdl-plan {
+  animation: mdl-fade-in 0.45s var(--ui-ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+@keyframes mdl-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mdl-plan.is-lower {
+  animation-name: mdl-fade-in-dim;
+}
+
+@keyframes mdl-fade-in-dim {
+  from { opacity: 0; }
+  to { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mdl-track,
+  .mdl-plan {
+    animation: none;
+  }
+  .mdl-plan,
+  .mdl-radio {
+    transition: none;
+  }
+  .mdl-plan.is-inverse {
+    transform: none;
+  }
+}

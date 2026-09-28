@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
-import { HelpCircle, ArrowLeft, CheckCircle, XCircle, ChevronRight, Zap } from 'lucide-react';
+import { HelpCircle, ArrowLeft, CheckCircle, XCircle, ChevronRight, Zap, Target, Flag } from 'lucide-react';
 import { StudentPageShell } from '../../components/layout/StudentPageShell';
 import { HtmlContent } from '../../components/RichTextEditor';
+import { EmptyState, ProgressBar } from '../../components/ui';
+import '../../styles/pages/practice.css';
 
 export const Practice: React.FC = () => {
-  const { topicId } = useParams<{ topicId: string }>();
+  const { topicId, setId } = useParams<{ topicId: string; setId?: string }>();
   const navigate = useNavigate();
 
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -15,12 +17,13 @@ export const Practice: React.FC = () => {
   const [feedback, setFeedback] = useState<{ isCorrect: boolean; explanation?: string } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['practice-questions', topicId],
-    queryFn: () => api.get(`/practice/topic/${topicId}`),
+    queryKey: ['practice-questions', topicId, setId],
+    queryFn: () => api.get(setId ? `/practice/topic/${topicId}/set/${setId}` : `/practice/topic/${topicId}`),
     enabled: !!topicId,
   });
 
   const questions = data?.data?.data || [];
+  const practiceSet = data?.data?.practiceSet;
   const currentQ = questions[currentIdx];
 
   const handleSubmit = async () => {
@@ -44,147 +47,165 @@ export const Practice: React.FC = () => {
       setCurrentIdx((prev) => prev + 1);
     } else {
       alert('Practice Bank Complete! Great job 🎉');
-      navigate(-1);
+      navigate('/');
     }
   };
 
-  if (isLoading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading question bank...</div>;
-
-  if (questions.length === 0) {
+  if (isLoading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h3>No practice questions in this topic yet.</h3>
-        <button onClick={() => navigate(-1)} style={{ marginTop: '16px', color: 'var(--accent)' }}>
-          Go Back
-        </button>
-      </div>
+      <StudentPageShell narrow>
+        <div className="prac-loading" aria-busy="true">
+          <div className="ui-skeleton prac-skel-line" />
+          <div className="ui-skeleton prac-skel-title" />
+          <div className="ui-skeleton prac-skel-bar" />
+          <div className="ui-skeleton prac-skel-card" />
+          <p className="ui-faint">Loading question bank…</p>
+        </div>
+      </StudentPageShell>
     );
   }
 
+  if (questions.length === 0) {
+    return (
+      <StudentPageShell narrow>
+        <div className="ui-tile prac-empty">
+          <EmptyState
+            icon={<HelpCircle size={24} />}
+            title="No questions yet"
+            text="There are no practice questions in this practice set yet."
+            action={
+              <button type="button" className="ui-btn is-primary" onClick={() => navigate('/')}>
+                <ArrowLeft size={16} /> Back to home
+              </button>
+            }
+          />
+        </div>
+      </StudentPageShell>
+    );
+  }
+
+  const isLast = currentIdx >= questions.length - 1;
+  const answeredCount = currentIdx + (feedback ? 1 : 0);
+  const progressPct = Math.round((answeredCount / questions.length) * 100);
+
   return (
-    <StudentPageShell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}
-        >
-          <ArrowLeft size={18} /> Back
+    <StudentPageShell narrow>
+      <div className="prac-topbar">
+        <button type="button" className="ui-btn is-ghost is-sm prac-back" onClick={() => navigate('/')}>
+          <ArrowLeft size={16} /> Back to home
         </button>
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          Question {currentIdx + 1} of {questions.length}
+        <span className="ui-chip is-gold">
+          <Zap size={12} fill="currentColor" /> +10 XP each
         </span>
       </div>
 
-      <div className="glass-card" style={{ padding: '24px', borderRadius: 'var(--radius-md)' }}>
-        <HtmlContent as="div" html={currentQ.questionText} style={{ fontSize: '1.2rem', marginBottom: '16px', fontWeight: 600 }} />
+      <header className="prac-head">
+        <div className="ui-label prac-eyebrow">
+          <Target size={13} /> Practice drill
+        </div>
+        <h1 className="ui-page-title">{practiceSet?.title || 'Practice Drill'}</h1>
+        {practiceSet?.description && <p className="ui-page-sub">{practiceSet.description}</p>}
+      </header>
 
-        {currentQ.questionImage && (
-          <img
-            src={currentQ.questionImage}
-            alt="Anatomy Diagram"
-            style={{ maxWidth: '100%', borderRadius: 'var(--radius-sm)', marginBottom: '16px' }}
-          />
-        )}
+      <div className="prac-progress" aria-label={`Question ${currentIdx + 1} of ${questions.length}`}>
+        <div className="prac-progress-row">
+          <span className="prac-counter">
+            Question <strong>{currentIdx + 1}</strong>
+            <span className="ui-faint"> / {questions.length}</span>
+          </span>
+          <span className="ui-faint prac-pct">{progressPct}% done</span>
+        </div>
+        <ProgressBar value={progressPct} height={8} tone="gold" />
+      </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-          {currentQ.options?.map((opt: any) => (
-            <button
-              key={opt.id}
-              onClick={() => !feedback && setSelectedOpt(opt.id)}
-              style={{
-                padding: '14px 16px',
-                borderRadius: 'var(--radius-sm)',
-                background: selectedOpt === opt.id ? 'var(--accent-light)' : 'var(--bg-secondary)',
-                border: `1.5px solid ${selectedOpt === opt.id ? 'var(--accent)' : 'var(--border-color)'}`,
-                color: 'var(--text-primary)',
-                textAlign: 'left',
-                fontWeight: 500,
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
-              <div
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: 'var(--radius-full)',
-                  border: '2px solid var(--text-muted)',
-                  borderColor: selectedOpt === opt.id ? 'var(--accent)' : 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
+      <section className="ui-tile prac-card ui-rise" key={currentQ._id || currentIdx}>
+        <div className="ui-tile-head">
+          <span className="ui-chip">
+            <HelpCircle size={12} /> Q{currentIdx + 1}
+          </span>
+          {!feedback && <span className="ui-faint">Choose the best answer</span>}
+        </div>
+
+        <HtmlContent as="div" html={currentQ.questionText} className="prac-question" />
+
+        {currentQ.questionImage && <img src={currentQ.questionImage} alt="Anatomy Diagram" className="prac-image" />}
+
+        <div className="prac-options" role="radiogroup">
+          {currentQ.options?.map((opt: any) => {
+            const isSelected = selectedOpt === opt.id;
+            const state = isSelected ? (feedback ? (feedback.isCorrect ? ' is-correct' : ' is-wrong') : ' is-selected') : '';
+            return (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                key={opt.id}
+                className={`ui-option${state}${feedback && !isSelected ? ' prac-option-dim' : ''}`}
+                onClick={() => !feedback && setSelectedOpt(opt.id)}
               >
-                {opt.id.toUpperCase()}
-              </div>
-              <HtmlContent html={opt.text} style={{ flex: 1 }} />
-            </button>
-          ))}
+                <span className="ui-option-key">{opt.id.toUpperCase()}</span>
+                <HtmlContent html={opt.text} className="ui-grow" />
+                {isSelected && feedback && (
+                  <span className={`prac-option-mark ${feedback.isCorrect ? 'is-correct' : 'is-wrong'}`}>
+                    {feedback.isCorrect ? <CheckCircle size={18} /> : <XCircle size={18} />}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {!feedback ? (
-          <button
-            onClick={handleSubmit}
-            disabled={!selectedOpt}
-            style={{
-              width: '100%',
-              padding: '14px',
-              borderRadius: 'var(--radius-full)',
-              background: selectedOpt ? 'var(--accent)' : 'var(--bg-secondary)',
-              color: selectedOpt ? 'var(--on-accent)' : 'var(--text-muted)',
-              fontWeight: 700,
-              fontSize: '0.95rem',
-            }}
-          >
-            Check Answer
+          <button type="button" className="ui-btn is-primary is-lg is-block" onClick={handleSubmit} disabled={!selectedOpt}>
+            Check answer
           </button>
         ) : (
-          <div>
-            <div
-              style={{
-                padding: '16px',
-                borderRadius: 'var(--radius-sm)',
-                background: feedback.isCorrect ? 'var(--success-light)' : 'var(--error-light)',
-                color: feedback.isCorrect ? 'var(--success)' : 'var(--error)',
-                marginBottom: '16px',
-              }}
-            >
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: '4px' }}>
-                {feedback.isCorrect ? 'Correct! +10 XP 🎯' : 'Incorrect'}
-              </div>
-              {feedback.explanation && (
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginTop: '8px' }}>
-                  <strong>Explanation:</strong> <HtmlContent as="span" html={feedback.explanation} />
+          <div className="prac-result">
+            <div className={`ui-callout ${feedback.isCorrect ? 'is-success' : 'is-danger'} prac-feedback`} role="status">
+              <span className={`prac-feedback-icon ${feedback.isCorrect ? 'is-correct' : 'is-wrong'}`}>
+                {feedback.isCorrect ? <CheckCircle size={22} /> : <XCircle size={22} />}
+              </span>
+              <div className="ui-grow">
+                <div className="prac-feedback-title">
+                  {feedback.isCorrect ? (
+                    <>
+                      Correct! <span className="prac-xp">+10 XP 🎯</span>
+                    </>
+                  ) : (
+                    'Not quite — keep going'
+                  )}
                 </div>
-              )}
+                {!feedback.explanation && (
+                  <div className="prac-feedback-body ui-muted">
+                    {feedback.isCorrect ? 'Nice work, that’s the right answer.' : 'Review the question and try the next one.'}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <button
-              onClick={handleNext}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--accent)',
-                color: 'var(--on-accent)',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-              }}
-            >
-              Next Question <ChevronRight size={18} />
+            {feedback.explanation && (
+              <div className="ui-callout prac-explanation">
+                <div className="ui-grow">
+                  <div className="ui-label">Explanation</div>
+                  <HtmlContent as="div" html={feedback.explanation} className="prac-explanation-body" />
+                </div>
+              </div>
+            )}
+
+            <button type="button" className={`ui-btn is-lg is-block ${isLast ? 'is-gold' : 'is-primary'}`} onClick={handleNext}>
+              {isLast ? (
+                <>
+                  <Flag size={16} /> Finish practice
+                </>
+              ) : (
+                <>
+                  Next question <ChevronRight size={18} />
+                </>
+              )}
             </button>
           </div>
         )}
-      </div>
+      </section>
     </StudentPageShell>
   );
 };

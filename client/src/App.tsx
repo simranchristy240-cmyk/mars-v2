@@ -71,21 +71,26 @@ const LoginRoute: React.FC = () => {
   );
 };
 
+import { DrawerProvider } from './contexts/DrawerContext';
+
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <BrowserRouter>
-            <Routes>
+            <DrawerProvider>
+              <Routes>
               <Route path="/login" element={<LoginRoute />} />
 
               <Route element={<StudentRoute />}>
                 <Route path="/" element={<StudentDashboard />} />
-                <Route path="/courses" element={<Courses />} />
-                <Route path="/course/:id" element={<CourseDetail />} />
+                <Route path="/courses" element={<Navigate to="/" replace />} />
+                <Route path="/course" element={<Navigate to="/" replace />} />
+                <Route path="/course/:id" element={<Navigate to="/" replace />} />
                 <Route path="/lesson/:id" element={<Lesson />} />
                 <Route path="/practice/topic/:topicId" element={<Practice />} />
+                <Route path="/practice/topic/:topicId/set/:setId" element={<Practice />} />
                 <Route path="/tests/course/:courseId" element={<TestLobby />} />
                 <Route path="/tests/:id/attempt" element={<TestAttempt />} />
                 <Route path="/tests/:id/report" element={<TestReport />} />
@@ -104,6 +109,7 @@ export const App: React.FC = () => {
 
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
+            </DrawerProvider>
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>

@@ -10,6 +10,7 @@ interface AuthContextType {
   loginWithPassword: (username: string, password: string) => Promise<IUser>;
   loginAsDemoNewStudent: () => Promise<IUser>;
   loginAsDemoStudent: () => Promise<IUser>;
+  loginAsDemoPaidStudent: () => Promise<IUser>;
   loginAsDemoAdmin: () => Promise<IUser>;
   logout: () => void;
   updateUser: (data: Partial<IUser>) => void;
@@ -59,6 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginAsDemoStudent = async (): Promise<IUser> => {
     return await loginWithPassword('student', 'mars123');
+  };
+
+  const loginAsDemoPaidStudent = async (): Promise<IUser> => {
+    return await loginWithPassword('paidstudent', 'mars123');
   };
 
   const loginAsDemoAdmin = async (): Promise<IUser> => {
@@ -117,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithPassword,
         loginAsDemoNewStudent,
         loginAsDemoStudent,
+        loginAsDemoPaidStudent,
         loginAsDemoAdmin,
         logout,
         updateUser,

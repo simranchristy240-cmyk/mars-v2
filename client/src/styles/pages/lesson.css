@@ -1,0 +1,465 @@
+/* Lesson player — main pane */
+
+.les-wrap {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────── */
+
+.les-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.les-head-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.les-head .les-eyebrow {
+  flex: 1;
+  min-width: 0;
+  color: var(--ui-gold-ink);
+}
+
+.les-contents-btn {
+  margin-left: auto;
+}
+
+.les-head .les-title {
+  font-size: clamp(1.75rem, 4.2vw, 2.6rem);
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  max-width: 22ch;
+  overflow-wrap: anywhere;
+}
+
+.les-meta {
+  --gap: 10px;
+}
+
+.les-meta .ui-faint {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Stepper ─────────────────────────────────────────────────────────── */
+
+.les-stepper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.les-steps {
+  flex: 1;
+  display: flex;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.les-step {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--track-bg);
+  transition: background 0.4s var(--ui-ease), transform 0.4s var(--ui-ease);
+}
+
+.les-step.is-done {
+  background: var(--accent);
+}
+
+.les-step.is-current {
+  background: var(--ui-gold);
+  transform: scaleY(1.35);
+}
+
+.les-stepper-pct {
+  min-width: 3ch;
+  text-align: right;
+  font-family: var(--font-family-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Stage ───────────────────────────────────────────────────────────── */
+
+.les-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+/* Video */
+
+.les-video-tile {
+  background: var(--ui-tile-bg);
+}
+
+.les-video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--ui-inverse-bg);
+}
+
+.les-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.les-video-caption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--divider);
+}
+
+/* Reading */
+
+.ui-tile.les-reading {
+  padding: 24px 20px;
+}
+
+@media (min-width: 720px) {
+  .ui-tile.les-reading {
+    padding: 40px 48px;
+  }
+}
+
+.les-reading-title {
+  max-width: 70ch;
+  margin-bottom: 18px;
+}
+
+.les-prose {
+  max-width: 70ch;
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+  overflow-wrap: break-word;
+}
+
+.les-prose > * + * {
+  margin-top: 1em;
+}
+
+.les-prose h1,
+.les-prose h2,
+.les-prose h3,
+.les-prose h4 {
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin-top: 1.6em;
+}
+
+.les-prose > :first-child {
+  margin-top: 0;
+}
+
+.les-prose h1 { font-size: 1.6rem; }
+.les-prose h2 { font-size: 1.35rem; }
+.les-prose h3 { font-size: 1.15rem; }
+.les-prose h4 { font-size: 1rem; }
+
+.les-prose p,
+.les-prose li {
+  color: var(--text-primary);
+}
+
+.les-prose ul,
+.les-prose ol {
+  padding-left: 1.4em;
+}
+
+.les-prose ul { list-style: disc; }
+.les-prose ol { list-style: decimal; }
+
+.les-prose li + li {
+  margin-top: 0.4em;
+}
+
+.les-prose li::marker {
+  color: var(--ui-gold-ink);
+}
+
+.les-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+.les-prose strong,
+.les-prose b {
+  font-weight: 700;
+}
+
+.les-prose mark {
+  background: var(--ui-gold-soft);
+  color: inherit;
+  padding: 0 3px;
+  border-radius: 4px;
+}
+
+.les-prose blockquote {
+  padding: 14px 18px;
+  border-left: 3px solid var(--ui-gold);
+  border-radius: 0 14px 14px 0;
+  background: var(--ui-tile-muted);
+  color: var(--text-secondary);
+}
+
+.les-prose code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--ui-tile-muted);
+  font-size: 0.9em;
+}
+
+.les-prose pre {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--ui-tile-muted);
+  overflow-x: auto;
+}
+
+.les-prose pre code {
+  padding: 0;
+  background: none;
+}
+
+.les-prose img,
+.les-prose video,
+.les-prose iframe {
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+
+.les-prose hr {
+  border: none;
+  height: 1px;
+  background: var(--divider);
+  margin: 1.8em 0;
+}
+
+.les-prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.les-prose th,
+.les-prose td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+}
+
+.les-prose th {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Inline question */
+
+.ui-tile.les-question {
+  padding: 22px 18px;
+}
+
+@media (min-width: 720px) {
+  .ui-tile.les-question {
+    padding: 32px 36px;
+  }
+}
+
+.les-question-text {
+  font-family: var(--font-family-heading);
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  max-width: 62ch;
+  margin-bottom: 20px;
+}
+
+.les-question-img {
+  display: block;
+  max-width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--ui-tile-border);
+  margin-bottom: 20px;
+}
+
+.les-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.les-submit {
+  width: 100%;
+}
+
+@media (min-width: 560px) {
+  .les-submit {
+    width: auto;
+    min-width: 200px;
+  }
+}
+
+.les-feedback {
+  align-items: flex-start;
+  animation: ui-rise 0.35s var(--ui-ease);
+}
+
+.les-feedback-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.les-feedback-icon.is-correct { color: var(--success); }
+.les-feedback-icon.is-wrong { color: var(--error); }
+
+.les-feedback-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-family-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.les-xp {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--ui-gold);
+  color: #1a1406;
+  font-family: var(--font-family-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.les-feedback-body {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+/* ─── Bottom action row ───────────────────────────────────────────────── */
+
+.les-actions {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  margin-top: 8px;
+}
+
+.les-actions-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 10px 10px 18px;
+  border-radius: 999px;
+  background: var(--ui-tile-bg);
+  border: 1px solid var(--ui-tile-border);
+  box-shadow: var(--ui-tile-shadow-hover);
+}
+
+.les-actions-next {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.les-actions-next-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+@media (max-width: 420px) {
+  .les-actions-inner {
+    padding-left: 16px;
+  }
+  .les-actions-inner .ui-btn.is-lg {
+    height: 46px;
+    padding: 0 18px;
+  }
+}
+
+/* ─── Loading / locked / empty ────────────────────────────────────────── */
+
+.les-state {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ui-skeleton.les-skel-eyebrow {
+  --h: 16px;
+  width: 30%;
+  border-radius: 999px;
+}
+
+.ui-skeleton.les-skel-title {
+  --h: 44px;
+  width: 75%;
+}
+
+.ui-skeleton.les-skel-bar {
+  --h: 8px;
+  border-radius: 999px;
+}
+
+.ui-skeleton.les-state-media {
+  min-height: 0;
+  aspect-ratio: 16 / 9;
+  margin-top: 8px;
+}
+
+.les-state .ui-faint {
+  text-align: center;
+}
+
+.les-state-tile {
+  margin-top: 8vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .les-feedback,
+  .les-step {
+    animation: none;
+    transition: none;
+  }
+}

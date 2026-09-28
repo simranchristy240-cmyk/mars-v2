@@ -6,6 +6,7 @@ export interface IEnrollmentDocument extends Document {
   paymentId?: Schema.Types.ObjectId;
   enrolledAt: Date;
   accessType: 'free' | 'paid';
+  tier?: 'basic' | 'plus' | 'premium';
 }
 
 const EnrollmentSchema = new Schema<IEnrollmentDocument>(
@@ -15,6 +16,7 @@ const EnrollmentSchema = new Schema<IEnrollmentDocument>(
     paymentId: { type: Schema.Types.ObjectId, ref: 'Payment' },
     enrolledAt: { type: Date, default: Date.now },
     accessType: { type: String, enum: ['free', 'paid'], default: 'paid' },
+    tier: { type: String, enum: ['basic', 'plus', 'premium'], default: 'basic' },
   },
   { timestamps: true }
 );

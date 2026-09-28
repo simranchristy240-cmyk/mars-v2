@@ -8,6 +8,7 @@ export interface SectionFormValues {
   type: SectionType;
   title: string;
   isPublished: boolean;
+  accessTier: 'free' | 'basic' | 'plus' | 'premium';
   vimeoVideoId: string;
   videoStartTime: string;
   videoEndTime: string;
@@ -27,6 +28,7 @@ export const emptySectionForm = (type: SectionType = 'video'): SectionFormValues
   type,
   title: '',
   isPublished: true,
+  accessTier: 'free',
   vimeoVideoId: '76979871',
   videoStartTime: '0',
   videoEndTime: '300',
@@ -57,6 +59,7 @@ export const sectionToForm = (section: any): SectionFormValues => {
     type: section.type || 'video',
     title: section.title || '',
     isPublished: section.isPublished !== false,
+    accessTier: section.accessTier || 'free',
     vimeoVideoId: section.vimeoVideoId || '',
     videoStartTime: String(section.videoStartTime ?? 0),
     videoEndTime: String(section.videoEndTime ?? 300),
@@ -88,6 +91,7 @@ export const formToPayload = (form: SectionFormValues, parentId: string, parentT
     type: form.type,
     title: form.title,
     isPublished: form.isPublished,
+    accessTier: form.accessTier || 'free',
     parentId,
     parentType,
     order,
@@ -446,6 +450,25 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
           </div>
         </>
       )}
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', fontWeight: 600 }}>
+          Required Access Tier
+        </label>
+        <select
+          value={value.accessTier}
+          onChange={(e) => set('accessTier', e.target.value as any)}
+          style={inputStyle}
+        >
+          <option value="free">Free Preview (Available to all students)</option>
+          <option value="basic">Basic (Basic, Plus, and Premium plans)</option>
+          <option value="plus">Plus (Plus and Premium plans)</option>
+          <option value="premium">Premium (Premium plan only)</option>
+        </select>
+        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+          Controls which enrolled tier level can view or practice this content item.
+        </span>
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
         <input

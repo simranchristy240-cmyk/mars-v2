@@ -6,6 +6,7 @@ import { Section } from '../models/Section';
 import { Course } from '../models/Course';
 import { Enrollment } from '../models/Enrollment';
 import { Test } from '../models/Test';
+import { canAccessTier, getStudentCourseTier } from '../utils/tierAccess';
 
 export const createTopic = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -61,12 +62,13 @@ export const deleteTopic = async (req: AuthenticatedRequest, res: Response) => {
 
 export const createLesson = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { topicId, courseId, title, order, isPublished } = req.body;
+    const { topicId, courseId, title, order, accessTier, isPublished } = req.body;
     const lesson = await Lesson.create({
       topicId,
       courseId,
       title,
       order: order || 1,
+      accessTier: accessTier || 'free',
       isPublished: isPublished !== undefined ? isPublished : true,
     });
 
@@ -127,25 +129,24 @@ export const getLesson = async (req: AuthenticatedRequest, res: Response) => {
         return res.status(404).json({ success: false, error: 'Lesson not found' });
       }
 
-      if (!topic.isFree) {
-        const enrollment = await Enrollment.findOne({
-          studentId: req.user?._id,
-          courseId: lesson.courseId,
-        });
+      const studentTier = await getStudentCourseTier(req.user?._id, lesson.courseId);
+      const requiredTier = lesson.accessTier || (topic.isFree ? 'free' : 'basic');
 
-        if (!enrollment) {
-          return res.status(403).json({
-            success: false,
-            error: 'Topic locked. Purchase full course to access.',
-            isLocked: true,
-          });
-        }
+      if (!canAccessTier(studentTier, requiredTier)) {
+        return res.status(403).json({
+          success: false,
+          error: `This lesson is available on the ${requiredTier.toUpperCase()} plan. Upgrade your plan to access this content.`,
+          isLocked: true,
+          requiredTier,
+          studentTier,
+        });
       }
 
       const lessonObj = lesson.toObject() as any;
       lessonObj.sections = (lessonObj.sections || []).filter(
-        (s: any) => s.isPublished !== false
+        (s: any) => s.isPublished !== false && canAccessTier(studentTier, s.accessTier || 'free')
       );
+      lessonObj.studentTier = studentTier;
       return res.json({ success: true, data: lessonObj });
     }
 
@@ -159,6 +160,7 @@ export const createSection = async (req: AuthenticatedRequest, res: Response) =>
   try {
     const sectionData = {
       ...req.body,
+      accessTier: req.body.accessTier || 'free',
       isPublished: req.body.isPublished !== undefined ? req.body.isPublished : true,
     };
     const section = await Section.create(sectionData);

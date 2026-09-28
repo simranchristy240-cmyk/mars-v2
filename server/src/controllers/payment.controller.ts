@@ -15,13 +15,30 @@ const razorpay = new Razorpay({
 
 export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { courseId, couponCode } = req.body;
+    const { courseId, tier = 'basic', couponCode } = req.body;
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ success: false, error: 'Course not found' });
 
-    let finalAmount = course.price;
+    // Determine base amount for the selected tier
+    const selectedTier = (['basic', 'plus', 'premium'].includes(tier) ? tier : 'basic') as 'basic' | 'plus' | 'premium';
+    let baseAmount = course.pricing?.[selectedTier]?.price ?? course.price ?? 99900;
+
+    // Check if user is upgrading from an existing tier
+    const existingEnrollment = await Enrollment.findOne({
+      studentId: req.user._id,
+      courseId: course._id,
+    });
+
+    if (existingEnrollment?.tier) {
+      const existingTierPrice = course.pricing?.[existingEnrollment.tier as 'basic' | 'plus' | 'premium']?.price || 0;
+      if (baseAmount > existingTierPrice) {
+        baseAmount = baseAmount - existingTierPrice;
+      }
+    }
+
+    let finalAmount = baseAmount;
     let couponObj = null;
     let discountAmount = 0;
 
@@ -34,21 +51,29 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
 
       if (couponObj && couponObj.currentUses < couponObj.maxUses) {
         if (couponObj.type === 'percentage') {
-          discountAmount = Math.round((course.price * couponObj.value) / 100);
+          discountAmount = Math.round((baseAmount * couponObj.value) / 100);
         } else {
           discountAmount = couponObj.value;
         }
-        finalAmount = Math.max(0, course.price - discountAmount);
+        finalAmount = Math.max(0, baseAmount - discountAmount);
       }
     }
 
-    // If final amount is 0 (100% discount / free course), enroll directly
+    // If final amount is 0 (100% discount / free trial), enroll directly
     if (finalAmount === 0) {
-      const enrollment = await Enrollment.create({
-        studentId: req.user._id,
-        courseId: course._id,
-        accessType: 'paid',
-      });
+      const enrollment = await Enrollment.findOneAndUpdate(
+        { studentId: req.user._id, courseId: course._id },
+        {
+          accessType: 'paid',
+          tier: selectedTier,
+          enrolledAt: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+
+      // Lock course on user
+      req.user.selectedCourseId = course._id as any;
+      await req.user.save();
 
       if (couponObj) {
         couponObj.currentUses += 1;
@@ -57,7 +82,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
 
       return res.json({
         success: true,
-        data: { isFree: true, enrollment },
+        data: { isFree: true, enrollment, tier: selectedTier },
       });
     }
 
@@ -80,6 +105,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
     const payment = await Payment.create({
       studentId: req.user._id,
       courseId: course._id,
+      tier: selectedTier,
       amount: finalAmount,
       currency: course.currency || 'INR',
       razorpayOrderId,
@@ -96,6 +122,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
         currency: course.currency || 'INR',
         keyId: ENV.RAZORPAY_KEY_ID,
         paymentId: payment._id,
+        tier: selectedTier,
       },
     });
   } catch (err: any) {
@@ -132,16 +159,25 @@ export const verifyPayment = async (req: AuthenticatedRequest, res: Response) =>
     payment.status = 'paid';
     await payment.save();
 
-    // Create enrollment
+    // Create or upgrade enrollment
     const enrollment = await Enrollment.findOneAndUpdate(
       { studentId: req.user._id, courseId: payment.courseId },
-      { paymentId: payment._id, accessType: 'paid', enrolledAt: new Date() },
+      {
+        paymentId: payment._id,
+        accessType: 'paid',
+        tier: payment.tier || 'basic',
+        enrolledAt: new Date(),
+      },
       { upsert: true, new: true }
     );
 
+    // Lock course on user
+    req.user.selectedCourseId = payment.courseId as any;
+    await req.user.save();
+
     return res.json({
       success: true,
-      message: 'Payment verified and course enrolled!',
+      message: 'Payment verified and course unlocked!',
       data: enrollment,
     });
   } catch (err: any) {

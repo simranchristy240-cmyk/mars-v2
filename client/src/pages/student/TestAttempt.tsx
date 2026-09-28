@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
-import { Clock, Bookmark, Flag, ChevronLeft, ChevronRight, CheckCircle2, Grid } from 'lucide-react';
+import { Clock, Flag, ChevronLeft, ChevronRight, ChevronDown, LayoutGrid, Send, HelpCircle } from 'lucide-react';
 import { HtmlContent } from '../../components/RichTextEditor';
+import { EmptyState, ProgressBar } from '../../components/ui';
+import '../../styles/pages/tests.css';
 
 export const TestAttempt: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +61,16 @@ export const TestAttempt: React.FC = () => {
     return () => clearInterval(timer);
   }, [timeLeftSeconds]);
 
-  if (!testData) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading test environment...</div>;
+  if (!testData) {
+    return (
+      <div className="tst-exam-loading" aria-busy="true">
+        <span className="ui-icon-box tst-exam-loading-icon" style={{ ['--size' as string]: '56px' }}>
+          <Clock size={24} />
+        </span>
+        <p className="ui-muted">Loading test environment…</p>
+      </div>
+    );
+  }
 
   const currentSection = testData.sections[currentSectionIdx];
   const allQuestions = currentSection?.questions || [];
@@ -111,127 +122,180 @@ export const TestAttempt: React.FC = () => {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const isAnsweredQ = (q: any) => !!(answers[q._id] && answers[q._id].length > 0);
+  const answeredCount = allQuestions.filter(isAnsweredQ).length;
+  const flaggedCount = allQuestions.filter((q: any) => !!flagged[q._id]).length;
+  const answeredPct = allQuestions.length ? Math.round((answeredCount / allQuestions.length) * 100) : 0;
+  const timerTone = timeLeftSeconds < 300 ? ' is-danger' : timeLeftSeconds < 600 ? ' is-warning' : '';
+  const isFirst = currentQIdx === 0;
+  const isLast = currentQIdx === allQuestions.length - 1;
+  const isCurrentFlagged = !!(currentQ && flagged[currentQ._id]);
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column' }} className="animate-fade-in">
-      {/* Test Header */}
-      <header
-        style={{
-          padding: '12px 16px',
-          background: 'var(--bg-surface)',
-          borderBottom: '1px solid var(--border-color)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: '1.1rem' }}>{testData.title}</h2>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            Section {currentSectionIdx + 1}: {currentSection.name}
+    <div className="tst-exam">
+      <header className="tst-exam-bar">
+        <div className="tst-exam-bar-inner">
+          <div className="ui-grow tst-exam-heading">
+            <h1 className="tst-exam-title ui-truncate">{testData.title}</h1>
+            <div className="ui-faint ui-truncate">
+              Section {currentSectionIdx + 1} · {currentSection?.name}
+            </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Countdown Timer */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: 'var(--radius-full)',
-              background: timeLeftSeconds < 300 ? 'var(--error-light)' : 'var(--accent-light)',
-              color: timeLeftSeconds < 300 ? 'var(--error)' : 'var(--accent)',
-              fontWeight: 800,
-              fontSize: '1rem',
-            }}
-          >
-            <Clock size={18} /> {formatTime(timeLeftSeconds)}
+          <div className={`tst-timer${timerTone}`} role="timer" aria-label={`Time left ${formatTime(timeLeftSeconds)}`}>
+            <Clock size={16} />
+            <span>{formatTime(timeLeftSeconds)}</span>
           </div>
 
           <button
+            type="button"
+            className={`ui-icon-btn is-tile tst-palette-toggle${showNavGrid ? ' is-active' : ''}`}
             onClick={() => setShowNavGrid(!showNavGrid)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.85rem',
-            }}
+            aria-expanded={showNavGrid}
+            aria-label="Question palette"
           >
-            <Grid size={18} /> Grid
+            <LayoutGrid size={18} />
           </button>
 
-          <button
-            onClick={() => handleFinalSubmit(false)}
-            style={{
-              padding: '8px 18px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--accent)',
-              color: 'var(--on-accent)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-            }}
-          >
-            Submit Test
+          <button type="button" className="ui-btn is-primary tst-exam-submit" onClick={() => handleFinalSubmit(false)}>
+            <Send size={15} /> <span className="tst-exam-submit-label">Submit</span>
           </button>
+        </div>
+        <div className="tst-exam-progress" aria-hidden="true">
+          <span style={{ width: `${answeredPct}%` }} />
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div style={{ flex: 1, padding: '20px 20px 40px', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
-        {/* Navigation Grid Modal / Drawer */}
-        {showNavGrid && (
-          <div
-            className="glass-card"
-            style={{
-              padding: '16px',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '20px',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase' }}>
-              Question Navigation Grid
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))', gap: '8px' }}>
+      <div className="tst-exam-body">
+        <main className="tst-exam-main">
+          {currentQ ? (
+            <>
+              <div className="tst-q-counter">
+                <span className="tst-q-counter-num">
+                  Question <strong>{currentQIdx + 1}</strong>
+                  <span className="ui-faint"> / {allQuestions.length}</span>
+                </span>
+                <span className="ui-faint">
+                  {answeredCount} answered
+                  {flaggedCount > 0 ? ` · ${flaggedCount} marked` : ''}
+                </span>
+              </div>
+
+              <section className="ui-tile tst-question ui-rise" key={currentQ._id}>
+                <div className="ui-tile-head">
+                  <div className="ui-row">
+                    <span className="ui-chip">Q{currentQIdx + 1}</span>
+                    <span className="ui-chip is-outline">
+                      {currentQ.marks || 1} {(currentQ.marks || 1) === 1 ? 'mark' : 'marks'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`ui-btn is-sm tst-flag-btn${isCurrentFlagged ? ' is-flagged' : ' is-ghost'}`}
+                    onClick={toggleFlag}
+                    aria-pressed={isCurrentFlagged}
+                  >
+                    <Flag size={14} fill={isCurrentFlagged ? 'currentColor' : 'none'} />
+                    {isCurrentFlagged ? 'Marked for review' : 'Mark for review'}
+                  </button>
+                </div>
+
+                <HtmlContent as="div" html={currentQ.questionText} className="tst-question-text" />
+
+                {currentQ.questionImage && <img src={currentQ.questionImage} alt="Diagram" className="tst-question-image" />}
+
+                <div className="tst-options" role="radiogroup">
+                  {currentQ.options?.map((opt: any) => {
+                    const isSelected = answers[currentQ._id]?.includes(opt.id);
+                    return (
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={!!isSelected}
+                        key={opt.id}
+                        className={`ui-option${isSelected ? ' is-selected' : ''}`}
+                        onClick={() => handleSelectOption(opt.id)}
+                      >
+                        <span className="ui-option-key">{opt.id.toUpperCase()}</span>
+                        <HtmlContent html={opt.text} className="ui-grow" />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="tst-q-nav">
+                  <button
+                    type="button"
+                    className="ui-btn is-outline"
+                    onClick={() => setCurrentQIdx((prev) => Math.max(0, prev - 1))}
+                    disabled={isFirst}
+                  >
+                    <ChevronLeft size={18} /> Previous
+                  </button>
+
+                  {isLast ? (
+                    <button type="button" className="ui-btn is-gold" onClick={() => handleFinalSubmit(false)}>
+                      <Send size={15} /> Submit test
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="ui-btn is-primary"
+                      onClick={() => setCurrentQIdx((prev) => Math.min(allQuestions.length - 1, prev + 1))}
+                    >
+                      Next <ChevronRight size={18} />
+                    </button>
+                  )}
+                </div>
+              </section>
+            </>
+          ) : (
+            <div className="ui-tile">
+              <EmptyState
+                icon={<HelpCircle size={24} />}
+                title="No questions in this section"
+                text="There’s nothing to answer here yet."
+              />
+            </div>
+          )}
+        </main>
+
+        <aside className={`tst-palette-wrap${showNavGrid ? ' is-open' : ''}`}>
+          <div className="ui-tile tst-palette">
+            <button
+              type="button"
+              className="tst-palette-head"
+              onClick={() => setShowNavGrid(!showNavGrid)}
+              aria-expanded={showNavGrid}
+            >
+              <div className="ui-grow">
+                <div className="ui-section-title">Question palette</div>
+                <div className="ui-faint">
+                  {answeredCount} of {allQuestions.length} answered
+                </div>
+              </div>
+              <ChevronDown size={18} className="tst-palette-chevron" />
+            </button>
+
+            <ProgressBar value={answeredPct} height={6} tone="gold" />
+
+            <div className="tst-palette-grid">
               {allQuestions.map((q: any, idx: number) => {
-                const isAnswered = !!(answers[q._id] && answers[q._id].length > 0);
+                const isAnswered = isAnsweredQ(q);
                 const isFlagged = !!flagged[q._id];
                 const isCurrent = idx === currentQIdx;
+                const state = `${isAnswered ? ' is-answered' : ''}${isFlagged ? ' is-flagged' : ''}${isCurrent ? ' is-current' : ''}`;
 
                 return (
                   <button
+                    type="button"
                     key={q._id}
+                    className={`tst-palette-cell${state}`}
+                    aria-current={isCurrent ? 'step' : undefined}
+                    aria-label={`Question ${idx + 1}${isAnswered ? ', answered' : ', not answered'}${isFlagged ? ', marked for review' : ''}`}
                     onClick={() => {
                       setCurrentQIdx(idx);
                       setShowNavGrid(false);
-                    }}
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: 'var(--radius-xs)',
-                      background: isCurrent
-                        ? 'var(--accent)'
-                        : isFlagged
-                        ? 'var(--warning-light)'
-                        : isAnswered
-                        ? 'var(--success-light)'
-                        : 'var(--bg-secondary)',
-                      color: isCurrent
-                        ? 'var(--on-accent)'
-                        : isFlagged
-                        ? 'var(--warning)'
-                        : isAnswered
-                        ? 'var(--success)'
-                        : 'var(--text-secondary)',
-                      fontWeight: 700,
-                      fontSize: '0.85rem',
-                      border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border-color)'}`,
                     }}
                   >
                     {idx + 1}
@@ -239,132 +303,27 @@ export const TestAttempt: React.FC = () => {
                 );
               })}
             </div>
+
+            <ul className="tst-legend">
+              <li>
+                <span className="tst-legend-swatch is-answered" /> Answered
+              </li>
+              <li>
+                <span className="tst-legend-swatch is-flagged" /> Marked
+              </li>
+              <li>
+                <span className="tst-legend-swatch is-current" /> Current
+              </li>
+              <li>
+                <span className="tst-legend-swatch" /> Not answered
+              </li>
+            </ul>
+
+            <button type="button" className="ui-btn is-primary is-block tst-palette-submit" onClick={() => handleFinalSubmit(false)}>
+              <Send size={15} /> Submit test
+            </button>
           </div>
-        )}
-
-        {/* Question Item Card */}
-        {currentQ && (
-          <div className="glass-card" style={{ padding: '24px', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent)' }}>
-                Question {currentQIdx + 1} of {allQuestions.length} ({currentQ.marks || 1} Marks)
-              </span>
-
-              <button
-                onClick={toggleFlag}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: flagged[currentQ._id] ? 'var(--warning)' : 'var(--text-secondary)',
-                }}
-              >
-                <Flag size={16} fill={flagged[currentQ._id] ? 'currentColor' : 'none'} />
-                {flagged[currentQ._id] ? 'Flagged for Review' : 'Mark for Review'}
-              </button>
-            </div>
-
-            <HtmlContent
-              as="div"
-              html={currentQ.questionText}
-              style={{ fontSize: '1.2rem', marginBottom: '20px', lineHeight: 1.4, fontWeight: 600 }}
-            />
-
-            {currentQ.questionImage && (
-              <img
-                src={currentQ.questionImage}
-                alt="Diagram"
-                style={{ maxWidth: '100%', borderRadius: 'var(--radius-sm)', marginBottom: '20px' }}
-              />
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
-              {currentQ.options?.map((opt: any) => {
-                const isSelected = answers[currentQ._id]?.includes(opt.id);
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => handleSelectOption(opt.id)}
-                    style={{
-                      padding: '14px 16px',
-                      borderRadius: 'var(--radius-sm)',
-                      background: isSelected ? 'var(--accent-light)' : 'var(--bg-secondary)',
-                      border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border-color)'}`,
-                      color: 'var(--text-primary)',
-                      textAlign: 'left',
-                      fontWeight: 500,
-                      fontSize: '0.95rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '26px',
-                        height: '26px',
-                        borderRadius: 'var(--radius-full)',
-                        background: isSelected ? 'var(--accent)' : 'transparent',
-                        border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--text-muted)'}`,
-                        color: isSelected ? 'var(--on-accent)' : 'var(--text-muted)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {opt.id.toUpperCase()}
-                    </div>
-                    <HtmlContent html={opt.text} style={{ flex: 1 }} />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Bottom Nav Bar within Question */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <button
-                onClick={() => setCurrentQIdx((prev) => Math.max(0, prev - 1))}
-                disabled={currentQIdx === 0}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '10px 18px',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontWeight: 600,
-                  opacity: currentQIdx === 0 ? 0.4 : 1,
-                }}
-              >
-                <ChevronLeft size={18} /> Previous
-              </button>
-
-              <button
-                onClick={() => setCurrentQIdx((prev) => Math.min(allQuestions.length - 1, prev + 1))}
-                disabled={currentQIdx === allQuestions.length - 1}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '10px 24px',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--accent)',
-                  color: 'var(--on-accent)',
-                  fontWeight: 700,
-                  opacity: currentQIdx === allQuestions.length - 1 ? 0.4 : 1,
-                }}
-              >
-                Next <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-        )}
+        </aside>
       </div>
     </div>
   );
