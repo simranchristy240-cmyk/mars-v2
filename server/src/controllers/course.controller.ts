@@ -105,7 +105,7 @@ export const getCourseDetail = async (req: AuthenticatedRequest, res: Response) 
         {
           path: 'lessons',
           options: { sort: { order: 1 } },
-          select: 'title order sections accessTier isPublished',
+          select: 'title order sections accessTier isPublished notesFile',
         },
         {
           path: 'practiceQuestions',

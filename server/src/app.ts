@@ -20,15 +20,28 @@ import adminRoutes from './routes/admin.routes';
 const app = express();
 
 // Security & Middleware
+const allowedOrigins = [
+  ...((ENV.CLIENT_ORIGIN || '').split(',').map((o) => o.trim()).filter(Boolean)),
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+];
+
 app.use(
   cors({
-    origin: [
-      ENV.CLIENT_ORIGIN,
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174',
-    ],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      try {
+        const url = new URL(origin);
+        if (allowedOrigins.includes(origin) || url.hostname.endsWith('.vercel.app')) {
+          return callback(null, true);
+        }
+      } catch {
+        // invalid url, fallback
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -39,7 +52,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: process.env.NODE_ENV === 'development' ? 10000 : 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Too many requests, please try again later.' },

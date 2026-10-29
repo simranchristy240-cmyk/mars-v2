@@ -4,6 +4,7 @@ export interface ITestAttemptDocument extends Document {
   testId: Schema.Types.ObjectId;
   studentId: Schema.Types.ObjectId;
   startedAt: Date;
+  deadlineAt?: Date;
   submittedAt?: Date;
   isAutoSubmitted: boolean;
   answers: Array<{
@@ -32,6 +33,7 @@ const TestAttemptSchema = new Schema<ITestAttemptDocument>(
     testId: { type: Schema.Types.ObjectId, ref: 'Test', required: true },
     studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     startedAt: { type: Date, default: Date.now },
+    deadlineAt: { type: Date },
     submittedAt: { type: Date },
     isAutoSubmitted: { type: Boolean, default: false },
     answers: [
@@ -64,5 +66,7 @@ const TestAttemptSchema = new Schema<ITestAttemptDocument>(
   },
   { timestamps: true }
 );
+
+TestAttemptSchema.index({ testId: 1, studentId: 1 }, { unique: true });
 
 export const TestAttempt = model<ITestAttemptDocument>('TestAttempt', TestAttemptSchema);

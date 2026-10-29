@@ -9,6 +9,7 @@ build/
 shared/dist/
 server/dist/
 client/dist/
+server/uploads/
 
 # Logs
 logs

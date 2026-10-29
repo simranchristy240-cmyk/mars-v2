@@ -1,3 +1,4 @@
+import { QuestionAnswer } from '../../components/QuestionAnswer';
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,8 +14,8 @@ export const Practice: React.FC = () => {
   const navigate = useNavigate();
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [selectedOpt, setSelectedOpt] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ isCorrect: boolean; explanation?: string } | null>(null);
+  const [selectedOpt, setSelectedOpt] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<{ isCorrect: boolean; explanation?: string; correctOptions?: string[] } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['practice-questions', topicId, setId],
@@ -27,12 +28,12 @@ export const Practice: React.FC = () => {
   const currentQ = questions[currentIdx];
 
   const handleSubmit = async () => {
-    if (!selectedOpt || !currentQ) return;
+    if (!selectedOpt.length || !currentQ) return;
 
     try {
       const res = await api.post('/practice/submit', {
         questionId: currentQ._id,
-        selectedOptions: [selectedOpt],
+        selectedOptions: selectedOpt,
       });
       setFeedback(res.data.data);
     } catch (err) {
@@ -41,7 +42,7 @@ export const Practice: React.FC = () => {
   };
 
   const handleNext = () => {
-    setSelectedOpt(null);
+    setSelectedOpt([]);
     setFeedback(null);
     if (currentIdx < questions.length - 1) {
       setCurrentIdx((prev) => prev + 1);
@@ -123,40 +124,17 @@ export const Practice: React.FC = () => {
           <span className="ui-chip">
             <HelpCircle size={12} /> Q{currentIdx + 1}
           </span>
-          {!feedback && <span className="ui-faint">Choose the best answer</span>}
+          {!feedback && <span className="ui-faint">Answer the question below</span>}
         </div>
 
         <HtmlContent as="div" html={currentQ.questionText} className="prac-question" />
 
         {currentQ.questionImage && <img src={currentQ.questionImage} alt="Anatomy Diagram" className="prac-image" />}
 
-        <div className="prac-options" role="radiogroup">
-          {currentQ.options?.map((opt: any) => {
-            const isSelected = selectedOpt === opt.id;
-            const state = isSelected ? (feedback ? (feedback.isCorrect ? ' is-correct' : ' is-wrong') : ' is-selected') : '';
-            return (
-              <button
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                key={opt.id}
-                className={`ui-option${state}${feedback && !isSelected ? ' prac-option-dim' : ''}`}
-                onClick={() => !feedback && setSelectedOpt(opt.id)}
-              >
-                <span className="ui-option-key">{opt.id.toUpperCase()}</span>
-                <HtmlContent html={opt.text} className="ui-grow" />
-                {isSelected && feedback && (
-                  <span className={`prac-option-mark ${feedback.isCorrect ? 'is-correct' : 'is-wrong'}`}>
-                    {feedback.isCorrect ? <CheckCircle size={18} /> : <XCircle size={18} />}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <QuestionAnswer question={currentQ} value={selectedOpt} onChange={setSelectedOpt} correctIds={feedback?.correctOptions} disabled={!!feedback} />
 
         {!feedback ? (
-          <button type="button" className="ui-btn is-primary is-lg is-block" onClick={handleSubmit} disabled={!selectedOpt}>
+          <button type="button" className="ui-btn is-primary is-lg is-block" onClick={handleSubmit} disabled={!selectedOpt.length}>
             Check answer
           </button>
         ) : (

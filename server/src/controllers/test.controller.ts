@@ -1,3 +1,4 @@
+import { studentQuestion, isAnswerCorrect, testDeadline, questionValidationError } from '@mars/shared';
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { Test } from '../models/Test';
@@ -8,6 +9,49 @@ import { Topic } from '../models/Topic';
 import { Course } from '../models/Course';
 
 import { canAccessTier, getStudentCourseTier } from '../utils/tierAccess';
+
+const attemptDeadline = (test: any, attempt: any): number => attempt.deadlineAt ? new Date(attempt.deadlineAt).getTime() : testDeadline(test, attempt.startedAt);
+
+async function finishAttempt(attempt: any, test: any, auto = false) {
+  const questions: any[] = test.sections.flatMap((section: any) => section.questions || []);
+  const marks = questions.reduce((sum, question) => sum + (question.marks || 1), 0);
+  let score = 0;
+  for (const question of questions) {
+    const answer = attempt.answers.find((item: any) => String(item.questionId) === String(question._id));
+    if (answer && isAnswerCorrect(question, answer.selectedOptions)) score += question.marks || 1;
+    else if (answer?.selectedOptions?.length && test.negativeMarkingEnabled) score -= question.negativeMarks || 0;
+  }
+  score = Math.max(0, score);
+  const percentage = Math.round(score / (marks || 1) * 100);
+  const rank = 1 + await TestAttempt.countDocuments({ testId: test._id, score: { $gt: score }, status: { $ne: 'in-progress' } });
+  const finished = await TestAttempt.findOneAndUpdate(
+    { _id: attempt._id, status: 'in-progress', __v: attempt.__v },
+    { $set: { score, totalMarks: marks, percentage, rank, submittedAt: new Date(),
+      status: auto ? 'auto-submitted' : 'submitted', isAutoSubmitted: auto }, $inc: { __v: 1 } },
+    { new: true }
+  );
+  if (finished) {
+    await Gamification.findOneAndUpdate({ studentId: attempt.studentId }, { $inc: { xp: percentage >= 80 ? 250 : 50 } });
+    return finished;
+  }
+  const latest = await TestAttempt.findById(attempt._id);
+  if (latest?.status !== 'in-progress') return latest;
+  throw new Error('Answers changed during submission. Please retry.');
+}
+
+async function validatePublishedTest(data: any): Promise<string | null> {
+  if (!Number.isFinite(Number(data.duration)) || Number(data.duration) <= 0) return 'Enter a positive test duration.';
+  if (!Number.isFinite(new Date(data.startTime).getTime()) || !Number.isFinite(new Date(data.endTime).getTime()) || new Date(data.startTime) >= new Date(data.endTime)) return 'Test end time must be after its start time.';
+  if (!data.isPublished) return null;
+  const ids = (data.sections || []).flatMap((section: any) => section.questions || []);
+  const questions = await Section.find({ _id: { $in: ids } });
+  if (!ids.length || questions.length !== new Set(ids.map(String)).size) return 'Add valid questions before publishing the test.';
+  for (const question of questions) {
+    const error = questionValidationError(question);
+    if (error) return error;
+  }
+  return null;
+}
 
 export const createTest = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -28,6 +72,8 @@ export const createTest = async (req: AuthenticatedRequest, res: Response) => {
       isPublished,
     } = req.body;
 
+    const validation = await validatePublishedTest(req.body);
+    if (validation) return res.status(400).json({ success: false, error: validation });
     const test = await Test.create({
       courseId,
       title,
@@ -59,6 +105,10 @@ export const updateTest = async (req: AuthenticatedRequest, res: Response) => {
     if (updates.startTime) updates.startTime = new Date(updates.startTime);
     if (updates.endTime) updates.endTime = new Date(updates.endTime);
 
+    const current = await Test.findById(id);
+    if (!current) return res.status(404).json({ success: false, error: 'Test not found' });
+    const validation = await validatePublishedTest({ ...current.toObject(), ...updates });
+    if (validation) return res.status(400).json({ success: false, error: validation });
     const test = await Test.findByIdAndUpdate(id, updates, { new: true }).populate({
       path: 'sections.questions',
     });
@@ -107,6 +157,17 @@ export const getCourseTests = async (req: AuthenticatedRequest, res: Response) =
       testId: { $in: testIds },
     });
 
+    await Promise.all(attempts.map(async (attempt) => {
+      const test = tests.find(item => String(item._id) === String(attempt.testId));
+      if (test && attempt.status === 'in-progress' && Date.now() >= attemptDeadline(test, attempt)) {
+        const populated = await Test.findById(test._id).populate('sections.questions');
+        if (populated) {
+          const finished = await finishAttempt(attempt, populated, true);
+          if (finished) Object.assign(attempt, finished.toObject());
+        }
+      }
+    }));
+
     const attemptsMap = new Map();
     attempts.forEach((a) => attemptsMap.set(a.testId.toString(), a));
 
@@ -119,7 +180,7 @@ export const getCourseTests = async (req: AuthenticatedRequest, res: Response) =
         isLocked,
         studentTier,
         attemptStatus: attempt ? attempt.status : 'not-started',
-        hasAttempted: !!attempt,
+        hasAttempted: !!attempt && attempt.status !== 'in-progress',
         attemptId: attempt ? attempt._id : undefined,
       };
     });
@@ -140,7 +201,7 @@ export const startTest = async (req: AuthenticatedRequest, res: Response) => {
       select: 'questionType questionText questionImage options matchPairs marks negativeMarks order parentId',
     });
 
-    if (!test) return res.status(404).json({ success: false, error: 'Test not found' });
+    if (!test || !test.isPublished) return res.status(404).json({ success: false, error: 'Test not found' });
 
     const studentTier = await getStudentCourseTier(req.user._id, test.courseId);
     if (!canAccessTier(studentTier, test.accessTier || 'free')) {
@@ -155,7 +216,8 @@ export const startTest = async (req: AuthenticatedRequest, res: Response) => {
 
     // Enforce schedule window
     const now = new Date();
-    if (now < new Date(test.startTime) || now > new Date(test.endTime)) {
+    const existingAttempt = await TestAttempt.findOne({ testId: test._id, studentId: req.user._id });
+    if (!existingAttempt && (now < new Date(test.startTime) || now > new Date(test.endTime))) {
       return res.status(400).json({
         success: false,
         error: 'Test is outside the allowed time window.',
@@ -163,38 +225,24 @@ export const startTest = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     // Check for existing attempt — ENFORCE SINGLE ATTEMPT POLICY
-    let attempt = await TestAttempt.findOne({ testId: test._id, studentId: req.user._id });
-    if (attempt && attempt.status !== 'in-progress') {
-      return res.status(400).json({
-        success: false,
-        error: 'You have already submitted this test. Retakes are not allowed.',
-        attemptId: attempt._id,
-      });
-    }
-
+    let attempt = existingAttempt;
     if (!attempt) {
-      attempt = await TestAttempt.create({
-        testId: test._id,
-        studentId: req.user._id,
-        startedAt: now,
-        answers: [],
-        status: 'in-progress',
-      });
+      attempt = await TestAttempt.findOneAndUpdate(
+        { testId: test._id, studentId: req.user._id },
+        { $setOnInsert: { startedAt: now, deadlineAt: new Date(testDeadline(test, now)), answers: [], status: 'in-progress' } },
+        { upsert: true, new: true }
+      );
+    }
+    if (!attempt) throw new Error('Unable to start test. Please retry.');
+    if (attempt.status === 'in-progress' && Date.now() >= attemptDeadline(test, attempt)) {
+      attempt = await finishAttempt(attempt, test, true);
     }
 
+    if (!attempt) throw new Error('Attempt not found');
     // Sanitize questions (remove answer keys for students)
     const sanitizedTest = test.toObject();
     sanitizedTest.sections.forEach((sec: any) => {
-      sec.questions = sec.questions.map((q: any) => {
-        if (q.options) {
-          q.options = q.options.map((opt: any) => ({
-            id: opt.id,
-            text: opt.text,
-            image: opt.image,
-          }));
-        }
-        return q;
-      });
+      sec.questions = sec.questions.map((question: any) => studentQuestion(question));
     });
 
     return res.json({
@@ -202,6 +250,8 @@ export const startTest = async (req: AuthenticatedRequest, res: Response) => {
       data: {
         test: sanitizedTest,
         attempt,
+        deadline: new Date(attemptDeadline(test, attempt)).toISOString(),
+        serverNow: new Date().toISOString(),
       },
     });
   } catch (err: any) {
@@ -212,46 +262,7 @@ export const startTest = async (req: AuthenticatedRequest, res: Response) => {
 export const saveAnswer = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { questionId, selectedOptions, matchAnswers, timeTaken, isMarkedForReview } = req.body;
-    if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-
-    const attempt = await TestAttempt.findOne({
-      testId: id,
-      studentId: req.user._id,
-      status: 'in-progress',
-    });
-
-    if (!attempt) {
-      return res.status(404).json({ success: false, error: 'Active test attempt not found' });
-    }
-
-    const answerIdx = attempt.answers.findIndex((a) => a.questionId.toString() === questionId);
-    if (answerIdx >= 0) {
-      attempt.answers[answerIdx].selectedOptions = selectedOptions || [];
-      attempt.answers[answerIdx].matchAnswers = matchAnswers;
-      attempt.answers[answerIdx].timeTaken = (attempt.answers[answerIdx].timeTaken || 0) + (timeTaken || 0);
-      attempt.answers[answerIdx].isMarkedForReview = !!isMarkedForReview;
-    } else {
-      attempt.answers.push({
-        questionId,
-        selectedOptions: selectedOptions || [],
-        matchAnswers,
-        timeTaken: timeTaken || 0,
-        isMarkedForReview: !!isMarkedForReview,
-      });
-    }
-
-    await attempt.save();
-    return res.json({ success: true, data: attempt });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-export const submitTest = async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { isAutoSubmitted } = req.body;
+    const { questionId, selectedOptions, isMarkedForReview } = req.body;
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const attempt = await TestAttempt.findOne({
@@ -266,69 +277,42 @@ export const submitTest = async (req: AuthenticatedRequest, res: Response) => {
 
     const test = await Test.findById(id).populate('sections.questions');
     if (!test) return res.status(404).json({ success: false, error: 'Test not found' });
+    if (Date.now() >= attemptDeadline(test, attempt)) {
+      await finishAttempt(attempt, test, true);
+      return res.status(409).json({ success: false, expired: true, error: 'Time has expired. Your saved answers have been submitted.' });
+    }
+    const question: any = test.sections.flatMap((section: any) => section.questions).find((q: any) => String(q._id) === questionId);
+    if (!question || !Array.isArray(selectedOptions) || selectedOptions.some((option: unknown) => typeof option !== 'string')) {
+      return res.status(400).json({ success: false, error: 'Invalid test answer' });
+    }
+    const answer = { questionId, selectedOptions, isMarkedForReview: !!isMarkedForReview, timeTaken: 0 };
+    const filter = { _id: attempt._id, status: 'in-progress', $expr: { $lt: ['$$NOW', new Date(attemptDeadline(test, attempt))] } };
+    const updated = await TestAttempt.updateOne({ ...filter, 'answers.questionId': questionId },
+      { $set: { 'answers.$': answer }, $inc: { __v: 1 } });
+    if (!updated.matchedCount) {
+      const inserted = await TestAttempt.updateOne({ ...filter, 'answers.questionId': { $ne: questionId } },
+        { $push: { answers: answer }, $inc: { __v: 1 } });
+      if (!inserted.matchedCount) return res.status(409).json({ success: false, error: 'Answer was not saved. The attempt ended or changed; retry.' });
+    }
 
-    // Calculate score
-    let totalScore = 0;
-    let totalMarksPossible = 0;
-
-    const allQuestions: any[] = [];
-    test.sections.forEach((sec) => {
-      sec.questions.forEach((q) => allQuestions.push(q));
-    });
-
-    const questionMap = new Map();
-    allQuestions.forEach((q) => questionMap.set(q._id.toString(), q));
-
-    attempt.answers.forEach((ans) => {
-      const question = questionMap.get(ans.questionId.toString());
-      if (question) {
-        const marks = question.marks || 1;
-        const neg = test.negativeMarkingEnabled ? question.negativeMarks || 0 : 0;
-        totalMarksPossible += marks;
-
-        const correctOptions = (question.options || [])
-          .filter((opt: any) => opt.isCorrect)
-          .map((opt: any) => opt.id);
-
-        const isCorrect =
-          correctOptions.length === ans.selectedOptions.length &&
-          correctOptions.every((optId: string) => ans.selectedOptions.includes(optId));
-
-        if (isCorrect) {
-          totalScore += marks;
-        } else if (ans.selectedOptions.length > 0) {
-          totalScore -= neg;
-        }
-      }
-    });
-
-    attempt.score = Math.max(0, totalScore);
-    attempt.totalMarks = test.totalMarks || totalMarksPossible || 1;
-    attempt.percentage = Math.round((attempt.score / attempt.totalMarks) * 100);
-    attempt.submittedAt = new Date();
-    attempt.status = isAutoSubmitted ? 'auto-submitted' : 'submitted';
-    attempt.isAutoSubmitted = !!isAutoSubmitted;
-
-    // Calculate rank
-    const higherAttempts = await TestAttempt.countDocuments({
-      testId: test._id,
-      score: { $gt: attempt.score },
-      status: { $in: ['submitted', 'auto-submitted'] },
-    });
-    attempt.rank = higherAttempts + 1;
-
-    await attempt.save();
-
-    // Award XP for test completion
-    const bonusXp = attempt.percentage >= 80 ? 250 : 50;
-    await Gamification.findOneAndUpdate(
-      { studentId: req.user._id },
-      { $inc: { xp: bonusXp } }
-    );
-
-    return res.json({ success: true, data: attempt });
+    return res.json({ success: true });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+export const submitTest = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    const attempt = await TestAttempt.findOne({ testId: req.params.id, studentId: req.user._id });
+    if (!attempt) return res.status(404).json({ success: false, error: 'Attempt not found' });
+    if (attempt.status !== 'in-progress') return res.json({ success: true, data: attempt });
+    const test = await Test.findById(req.params.id).populate('sections.questions');
+    if (!test) return res.status(404).json({ success: false, error: 'Test not found' });
+    const auto = Date.now() >= attemptDeadline(test, attempt);
+    return res.json({ success: true, data: await finishAttempt(attempt, test, auto) });
+  } catch (err: any) {
+    return res.status(409).json({ success: false, error: err.message });
   }
 };
 
@@ -337,24 +321,24 @@ export const getTestReport = async (req: AuthenticatedRequest, res: Response) =>
     const { id } = req.params;
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-    const attempt = await TestAttempt.findOne({
+    let attempt = await TestAttempt.findOne({
       testId: id,
       studentId: req.user._id,
-    }).populate({
-      path: 'answers.questionId',
     });
 
     if (!attempt) return res.status(404).json({ success: false, error: 'Test report not found' });
 
-    const test = await Test.findById(id);
+    const test = await Test.findById(id).populate('sections.questions');
+    if (attempt.status === 'in-progress' && test && Date.now() >= attemptDeadline(test, attempt)) attempt = await finishAttempt(attempt, test, true);
+    if (!attempt) return res.status(404).json({ success: false, error: 'Attempt not found' });
+    if (attempt.status === 'in-progress') return res.status(409).json({ success: false, error: 'Resume and submit the test to view your report.' });
 
-    return res.json({
-      success: true,
-      data: {
-        attempt,
-        test,
-      },
+    const reportAttempt: any = attempt.toObject();
+    reportAttempt.answers = (test?.sections || []).flatMap((section: any) => section.questions).filter(Boolean).map((question: any) => {
+      const saved = reportAttempt.answers.find((answer: any) => String(answer.questionId?._id || answer.questionId) === String(question._id));
+      return { ...(saved || { selectedOptions: [], isMarkedForReview: false, timeTaken: 0 }), questionId: question };
     });
+    return res.json({ success: true, data: { attempt: reportAttempt, test } });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
   }

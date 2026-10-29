@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Lock, Play, Search, Target, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Edit3, FileQuestion, Lock, Play, Plus, Search, Target, X } from 'lucide-react';
 
 type Tier = 'basic' | 'plus' | 'premium';
 
@@ -8,14 +8,29 @@ interface CurriculumSidebarProps {
   topics: any[];
   currentLessonId?: string;
   currentTopicId?: string;
-  completedLessonIds: string[];
-  activeSectionIdx: number;
-  sectionCount: number;
+  completedLessonIds?: string[];
+  activeSectionIdx?: number;
+  sectionCount?: number;
   onOpenLesson: (lessonId: string) => void;
-  onOpenPractice: (topicId: string, setId?: string) => void;
-  onLocked: (tier?: Tier) => void;
+  onOpenPractice?: (topicId: string, setId?: string) => void;
+  onLocked?: (tier?: Tier) => void;
   onHome: () => void;
-  onClose: () => void;
+  onClose?: () => void;
+  // Admin builder extensions
+  isAdmin?: boolean;
+  onEditCourse?: () => void;
+  onAddTopic?: () => void;
+  onEditTopic?: (topicId: string) => void;
+  onMoveTopic?: (topicId: string, direction: 'up' | 'down') => void;
+  onAddLesson?: (topicId: string) => void;
+  onEditLesson?: (lessonId: string, topicId: string) => void;
+  onMoveLesson?: (topicId: string, lessonId: string, direction: 'up' | 'down') => void;
+  onEditPractice?: (topicId: string, practiceSet?: any) => void;
+  tests?: any[];
+  currentTestId?: string;
+  onSelectTest?: (testId: string) => void;
+  onEditTest?: (testId: string) => void;
+  onAddTest?: () => void;
 }
 
 const getPracticeSets = (topic: any) => {
@@ -51,8 +66,8 @@ const ProgressRing: React.FC<{ value: number }> = ({ value }) => {
         />
       </svg>
       <span className="cs-ring-label">
-        {value}
-        <small>%</small>
+        <span className="cs-ring-num">{value}</span>
+        <span className="cs-ring-pct">%</span>
       </span>
     </div>
   );
@@ -63,14 +78,28 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
   topics,
   currentLessonId,
   currentTopicId,
-  completedLessonIds,
-  activeSectionIdx,
-  sectionCount,
+  completedLessonIds = [],
+  activeSectionIdx = 0,
+  sectionCount = 0,
   onOpenLesson,
   onOpenPractice,
   onLocked,
   onHome,
   onClose,
+  isAdmin = false,
+  onEditCourse,
+  onAddTopic,
+  onEditTopic,
+  onMoveTopic,
+  onAddLesson,
+  onEditLesson,
+  onMoveLesson,
+  onEditPractice,
+  tests,
+  currentTestId,
+  onSelectTest,
+  onEditTest,
+  onAddTest,
 }) => {
   const [openTopics, setOpenTopics] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState('');
@@ -110,7 +139,7 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
     .filter((t) => !q || t.lessons.length > 0 || t.practice.length > 0);
 
   const openLesson = (lesson: any) => {
-    if (lesson.isLocked) onLocked(lesson.accessTier || 'basic');
+    if (!isAdmin && lesson.isLocked && onLocked) onLocked(lesson.accessTier || 'basic');
     else onOpenLesson(lesson._id);
   };
 
@@ -123,23 +152,41 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
           <button type="button" className="cs-ghost" onClick={onHome}>
             <ArrowLeft size={14} /> Home
           </button>
-          <button type="button" className="cs-icon-btn" onClick={onClose} title="Hide curriculum">
-            <X size={16} />
-          </button>
+          {onClose && (
+            <button type="button" className="cs-icon-btn" onClick={onClose} title="Hide curriculum">
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         <div className="cs-hero">
           <ProgressRing value={overall} />
           <div className="cs-hero-text">
-            <span className="cs-eyebrow">Your journey</span>
-            <h2 title={courseTitle}>{courseTitle || 'Anatomy'}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+              <span className="cs-eyebrow">Your journey</span>
+              {isAdmin && onEditCourse && (
+                <button
+                  type="button"
+                  className="cs-hero-edit-btn"
+                  onClick={onEditCourse}
+                  title="Edit Course details"
+                >
+                  <Edit3 size={11} /> Edit Course
+                </button>
+              )}
+            </div>
+            <h2 title={courseTitle}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {courseTitle || 'Anatomy'}
+              </span>
+            </h2>
             <p>
               <strong>{doneCount}</strong> of {allLessons.length} lessons done
             </p>
           </div>
         </div>
 
-        {upNext && (
+        {!isAdmin && upNext && (
           <button type="button" className="cs-upnext" onClick={() => openLesson(upNext)}>
             <span className="cs-upnext-text">
               <span className="cs-upnext-label">Up next</span>
@@ -169,7 +216,7 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
           const topicLessons = topic.lessons || [];
           const topicDone = topicLessons.filter((l: any) => completed.has(String(l._id))).length;
           const topicPct = topicLessons.length ? Math.round((topicDone / topicLessons.length) * 100) : 0;
-          const isComplete = topicLessons.length > 0 && topicDone === topicLessons.length;
+          const isComplete = !isAdmin && topicLessons.length > 0 && topicDone === topicLessons.length;
 
           return (
             <section
@@ -186,15 +233,65 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
                   {isComplete ? <Check size={15} strokeWidth={3} /> : String(index + 1).padStart(2, '0')}
                 </span>
                 <span className="cs-topic-text">
-                  <span className="cs-topic-title">{topic.title}</span>
+                  <span className="cs-topic-title">
+                    {topic.title}
+                  </span>
                   <span className="cs-topic-meta">
                     {topicDone}/{topicLessons.length} lessons
                     {topic.isFree && <em className="cs-free">Free</em>}
                   </span>
                   <span className="cs-topic-bar">
-                    <span style={{ width: `${topicPct}%` }} />
+                    <span style={{ width: `${topicPct || (topicLessons.length > 0 ? 100 : 0)}%` }} />
                   </span>
                 </span>
+                {isAdmin && (onEditTopic || onMoveTopic) && (
+                  <span className="cs-topic-actions" onClick={(e) => e.stopPropagation()}>
+                    {onMoveTopic && index > 0 && (
+                      <button
+                        type="button"
+                        className="cs-icon-edit-btn"
+                        onClick={() => onMoveTopic(topic._id, 'up')}
+                        title="Move Chapter Up"
+                        aria-label="Move Chapter Up"
+                      >
+                        <ChevronUp size={13} />
+                      </button>
+                    )}
+                    {onMoveTopic && index < visibleTopics.length - 1 && (
+                      <button
+                        type="button"
+                        className="cs-icon-edit-btn"
+                        onClick={() => onMoveTopic(topic._id, 'down')}
+                        title="Move Chapter Down"
+                        aria-label="Move Chapter Down"
+                      >
+                        <ChevronDown size={13} />
+                      </button>
+                    )}
+                    {onEditTopic && (
+                      <button
+                        type="button"
+                        className="cs-icon-edit-btn"
+                        onClick={() => onEditTopic(topic._id)}
+                        title="Edit Chapter / Topic"
+                        aria-label="Edit Chapter / Topic"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                    )}
+                    {onAddLesson && (
+                      <button
+                        type="button"
+                        className="cs-icon-edit-btn is-add"
+                        onClick={() => onAddLesson(topic._id)}
+                        title="Add Lesson to this chapter"
+                        aria-label="Add Lesson to this chapter"
+                      >
+                        <Plus size={13} />
+                      </button>
+                    )}
+                  </span>
+                )}
                 <ChevronDown size={16} className="cs-chev" />
               </button>
 
@@ -202,15 +299,15 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
                 <div className="cs-topic-inner">
                   {lessons.length > 0 && (
                     <ol className="cs-timeline">
-                      {lessons.map((l: any) => {
+                      {lessons.map((l: any, lIdx: number) => {
                         const active = l._id === currentLessonId;
                         const done = completed.has(String(l._id));
-                        const state = l.isLocked ? 'is-locked' : active ? 'is-active' : done ? 'is-done' : '';
+                        const state = !isAdmin && l.isLocked ? 'is-locked' : active ? 'is-active' : done ? 'is-done' : '';
                         return (
                           <li key={l._id} className={`cs-lesson ${state}`}>
-                            <button type="button" onClick={() => openLesson(l)}>
+                            <button type="button" onClick={() => openLesson(l)} className="cs-lesson-btn">
                               <span className="cs-node">
-                                {l.isLocked ? (
+                                {!isAdmin && l.isLocked ? (
                                   <Lock size={11} />
                                 ) : active ? (
                                   <Play size={10} fill="currentColor" />
@@ -231,43 +328,170 @@ export const CurriculumSidebar: React.FC<CurriculumSidebarProps> = ({
                                   </span>
                                 )}
                               </span>
-                              {l.isLocked && <span className="cs-tier">{l.accessTier || 'basic'}</span>}
+                              {!isAdmin && l.isLocked && <span className="cs-tier">{l.accessTier || 'basic'}</span>}
                             </button>
+                            {isAdmin && (onEditLesson || onMoveLesson) && (
+                              <span className="cs-row-actions" onClick={(e) => e.stopPropagation()}>
+                                {onMoveLesson && lIdx > 0 && (
+                                  <button
+                                    type="button"
+                                    className="cs-row-act-btn"
+                                    onClick={() => onMoveLesson(topic._id, l._id, 'up')}
+                                    title="Move lesson up"
+                                    aria-label="Move lesson up"
+                                  >
+                                    <ChevronUp size={12} />
+                                  </button>
+                                )}
+                                {onMoveLesson && lIdx < lessons.length - 1 && (
+                                  <button
+                                    type="button"
+                                    className="cs-row-act-btn"
+                                    onClick={() => onMoveLesson(topic._id, l._id, 'down')}
+                                    title="Move lesson down"
+                                    aria-label="Move lesson down"
+                                  >
+                                    <ChevronDown size={12} />
+                                  </button>
+                                )}
+                                {onEditLesson && (
+                                  <button
+                                    type="button"
+                                    className="cs-row-act-btn is-edit"
+                                    onClick={() => onEditLesson(l._id, topic._id)}
+                                    title="Edit lesson details"
+                                    aria-label="Edit lesson details"
+                                  >
+                                    <Edit3 size={11} />
+                                  </button>
+                                )}
+                              </span>
+                            )}
                           </li>
                         );
                       })}
                     </ol>
                   )}
 
-                  {practice.length > 0 && (
+                  {practice.length > 0 ? (
                     <div className="cs-drills">
                       {practice.map((ps: any) => (
-                        <button
-                          type="button"
-                          key={ps._id}
-                          className={`cs-drill${ps.isLocked ? ' is-locked' : ''}`}
-                          onClick={() =>
-                            ps.isLocked
-                              ? onLocked(ps.accessTier || 'basic')
-                              : onOpenPractice(topic._id, ps._id !== 'default' ? ps._id : undefined)
-                          }
-                        >
-                          <span className="cs-drill-icon">{ps.isLocked ? <Lock size={14} /> : <Target size={15} />}</span>
-                          <span className="cs-drill-text">
-                            <span className="cs-drill-title">{ps.title}</span>
-                            <span className="cs-drill-meta">{ps.questions?.length || 0} questions</span>
-                          </span>
-                          <ArrowRight size={14} className="cs-drill-go" />
-                        </button>
+                        <div key={ps._id} className="cs-lesson-row">
+                          <button
+                            type="button"
+                            className={`cs-drill${!isAdmin && ps.isLocked ? ' is-locked' : ''}`}
+                            onClick={() =>
+                              !isAdmin && ps.isLocked
+                                ? onLocked?.(ps.accessTier || 'basic')
+                                : onOpenPractice?.(topic._id, ps._id !== 'default' ? ps._id : undefined)
+                            }
+                          >
+                            <span className="cs-drill-icon">{!isAdmin && ps.isLocked ? <Lock size={14} /> : <Target size={15} />}</span>
+                            <span className="cs-drill-text">
+                              <span className="cs-drill-title">{ps.title}</span>
+                              <span className="cs-drill-meta">{ps.questions?.length || 0} questions</span>
+                            </span>
+                            {!isAdmin && <ArrowRight size={14} className="cs-drill-go" />}
+                          </button>
+                          {isAdmin && (onEditPractice || onOpenPractice) && (
+                            <button
+                              type="button"
+                              className="cs-row-edit-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onEditPractice) {
+                                  onEditPractice(topic._id, ps);
+                                } else if (onOpenPractice) {
+                                  onOpenPractice(topic._id, ps._id !== 'default' ? ps._id : undefined);
+                                }
+                              }}
+                              title="Edit practice name & settings"
+                            >
+                              <Edit3 size={12} />
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
-                  )}
+                  ) : isAdmin && onOpenPractice ? (
+                    <div style={{ padding: '6px 0 2px' }}>
+                      <button
+                        type="button"
+                        className="cs-drill"
+                        onClick={() => onOpenPractice(topic._id)}
+                        style={{ borderStyle: 'dashed', opacity: 0.75 }}
+                        title="Add practice questions to this chapter"
+                      >
+                        <span className="cs-drill-icon"><Plus size={14} /></span>
+                        <span className="cs-drill-text">
+                          <span className="cs-drill-title">Add Practice Questions</span>
+                          <span className="cs-drill-meta">0 questions</span>
+                        </span>
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </section>
           );
         })}
+
+        {isAdmin && tests && tests.length > 0 && (
+          <div className="cs-tests-section">
+            <div className="cs-tests-title">
+              Assessments & Tests
+            </div>
+            {tests.map((test: any) => (
+              <div key={test._id} className="cs-lesson-row">
+                <button
+                  type="button"
+                  onClick={() => onSelectTest?.(test._id)}
+                  className={`cs-lesson-btn cs-test-btn ${test._id === currentTestId ? 'is-active' : ''}`}
+                >
+                  <span className="cs-node" style={{ width: 22, height: 22 }}>
+                    <FileQuestion size={12} />
+                  </span>
+                  <span className="cs-lesson-text">
+                    <span className="cs-lesson-title">{test.title}</span>
+                  </span>
+                </button>
+                {isAdmin && (onEditTest || onSelectTest) && (
+                  <button
+                    type="button"
+                    className="cs-row-edit-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onEditTest) {
+                        onEditTest(test._id);
+                      } else if (onSelectTest) {
+                        onSelectTest(test._id);
+                      }
+                    }}
+                    title="Edit test title & settings"
+                  >
+                    <Edit3 size={12} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {isAdmin && (onAddTopic || onAddTest) && (
+        <div className="cs-admin-footer">
+          {onAddTopic && (
+            <button type="button" className="cs-admin-add-btn" onClick={onAddTopic} title="Add Chapter / Topic">
+              <Plus size={13} /> Add Chapter
+            </button>
+          )}
+          {onAddTest && (
+            <button type="button" className="cs-admin-add-btn" onClick={onAddTest} title="Add Test">
+              <Plus size={13} /> Add Test
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

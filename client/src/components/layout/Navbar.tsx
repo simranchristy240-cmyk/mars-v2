@@ -6,7 +6,6 @@ import api from '../../services/api';
 import { LogOut, Shield, Settings, Trophy, Sparkles, Lock, ChevronDown, PanelLeft } from 'lucide-react';
 import { useDrawer } from '../../contexts/DrawerContext';
 import { GoalSelectionModal } from '../GoalSelectionModal';
-import { TierUpgradeModal } from '../TierUpgradeModal';
 import { NAV_ITEMS } from './navItems';
 
 const getTrackEmoji = (title?: string) => {
@@ -24,7 +23,6 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
-  const [tierModalOpen, setTierModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { data: myCourseRes } = useQuery({
@@ -104,10 +102,10 @@ export const Navbar: React.FC = () => {
               </button>
 
               {activeCourse && studentTier !== 'premium' && (
-                <button type="button" className="ui-btn is-gold is-sm shell-upgrade" onClick={() => setTierModalOpen(true)}>
+                <Link to="/pricing" className="ui-btn is-gold is-sm shell-upgrade">
                   <Sparkles size={14} />
                   <span>{studentTier === 'free' ? 'Upgrade' : `${studentTier[0].toUpperCase()}${studentTier.slice(1)}`}</span>
-                </button>
+                </Link>
               )}
             </>
           )}
@@ -165,15 +163,6 @@ export const Navbar: React.FC = () => {
       </div>
 
       {goalModalOpen && <GoalSelectionModal isOpen={true} onClose={() => setGoalModalOpen(false)} mandatory={false} />}
-
-      {tierModalOpen && activeCourse && (
-        <TierUpgradeModal
-          isOpen={true}
-          onClose={() => setTierModalOpen(false)}
-          course={activeCourse}
-          currentTier={studentTier}
-        />
-      )}
     </header>
   );
 };

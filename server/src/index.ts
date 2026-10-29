@@ -5,7 +5,7 @@ import { ENV } from './config/env';
 const startServer = async () => {
   let PORT = parseInt(ENV.PORT, 10) || 5053;
 
-  // Bind HTTP first so Render health checks can pass while Mongo retries.
+  // Bind HTTP first so health checks pass while Mongo connects in background.
   const server = app
     .listen(PORT, () => {
       console.log(`[MARS Server] Server listening on http://localhost:${PORT}`);

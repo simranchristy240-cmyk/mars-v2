@@ -1,125 +1,63 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AccessTier } from '@mars/shared';
 import api from '../../services/api';
+import { CurriculumSidebar } from '../../components/lesson/CurriculumSidebar';
+import { AuthorLessonView } from './builder/AuthorLessonView';
+import { AuthorPracticeView } from './builder/AuthorPracticeView';
+import { AuthorTestView } from './builder/AuthorTestView';
+import { AuthorChapterView } from './builder/AuthorChapterView';
+import { AuthorCourseOverview } from './builder/AuthorCourseOverview';
 import {
-  ArrowLeft,
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  FileQuestion,
-  Layers,
-  Plus,
-  Trash2,
-  Video,
-} from 'lucide-react';
-import {
-  SectionEditor,
-  SectionFormValues,
-  emptySectionForm,
-  formToPayload,
-  sectionToForm,
-  SectionType,
-} from './SectionEditor';
-import { RichTextEditor, stripHtml } from '../../components/RichTextEditor';
+  LessonSettingsModal,
+  SectionModal,
+  ChapterModal,
+  TestSettingsModal,
+  PracticeSettingsModal,
+} from './builder/AuthorModals';
+import { ArrowLeft, ExternalLink, Sparkles, X } from 'lucide-react';
+import '../../styles/pages/lesson.css';
+import '../../styles/pages/course-builder.css';
 
-type Selection =
+type BuilderSelection =
   | { kind: 'course' }
   | { kind: 'topic'; id: string }
-  | { kind: 'lesson'; id: string; topicId: string }
-  | { kind: 'section'; id: string; parentKind: 'lesson' | 'practice' | 'test'; parentId: string }
-  | { kind: 'practice-root'; topicId: string }
-  | { kind: 'test'; id: string }
-  | { kind: 'new-section'; parentKind: 'lesson' | 'practice' | 'test'; parentId: string; type?: SectionType }
-  | { kind: 'new-topic' }
-  | { kind: 'new-lesson'; topicId: string }
-  | { kind: 'new-test' };
+  | { kind: 'lesson'; id: string; topicId: string; sectionIdx?: number }
+  | { kind: 'practice'; topicId: string; setId?: string; questionIdx?: number }
+  | { kind: 'test'; id: string; questionIdx?: number };
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px',
-  borderRadius: 'var(--radius-sm)',
-  background: 'var(--bg-secondary)',
-  border: '1px solid var(--border-color)',
-  color: 'var(--text-primary)',
-};
-
-const primaryBtn: React.CSSProperties = {
-  padding: '12px 18px',
-  borderRadius: 'var(--radius-full)',
-  background: 'var(--accent)',
-  color: 'var(--on-accent)',
-  fontWeight: 700,
-  border: 'none',
-  cursor: 'pointer',
-};
-
-const dangerBtn: React.CSSProperties = {
-  ...primaryBtn,
-  background: 'var(--danger, #c0392b)',
-};
-
-const ghostBtn: React.CSSProperties = {
-  ...primaryBtn,
-  background: 'var(--bg-secondary)',
-  color: 'var(--text-primary)',
-  border: '1px solid var(--border-color)',
-};
-
-const confirmDelete = (label: string) =>
-  window.confirm(
-    `Remove ${label}? Contents under this item may be permanently lost and cannot be recovered.`
-  );
+type ModalState =
+  | null
+  | { type: 'lesson-settings'; lesson: any }
+  | { type: 'section-edit'; section: any; parentId: string; parentType: 'lesson' | 'practice' | 'test'; order: number }
+  | { type: 'section-new'; parentId: string; parentType: 'lesson' | 'practice' | 'test'; order: number; initialType?: 'video' | 'text' | 'question' }
+  | { type: 'topic-settings'; topic?: any }
+  | { type: 'practice-settings'; topicId: string; setId?: string; title: string; accessTier?: AccessTier }
+  | { type: 'test-settings'; test?: any };
 
 export const CourseBuilder: React.FC = () => {
   const { courseId: routeCourseId } = useParams<{ courseId?: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isEditMode = !!routeCourseId;
 
-  const [selection, setSelection] = useState<Selection>({ kind: 'course' });
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({ course: true, tests: true });
-  const [statusMsg, setStatusMsg] = useState('');
-  const [saving, setSaving] = useState(false);
+  // If no courseId in params, get all courses and pick the first
+  const { data: coursesListRes } = useQuery({
+    queryKey: ['admin-courses-list'],
+    queryFn: () => api.get('/courses'),
+    enabled: !routeCourseId,
+  });
 
-  // Course form (Tiered pricing)
-  const [courseTitle, setCourseTitle] = useState('');
-  const [courseDesc, setCourseDesc] = useState('');
-  const [basicPrice, setBasicPrice] = useState('499');
-  const [plusPrice, setPlusPrice] = useState('999');
-  const [premiumPrice, setPremiumPrice] = useState('1499');
-  const [coursePublished, setCoursePublished] = useState(true);
+  const firstCourseId = coursesListRes?.data?.data?.[0]?._id;
+  const courseId = routeCourseId || firstCourseId;
 
-  // Topic form
-  const [topicTitle, setTopicTitle] = useState('');
-  const [topicDesc, setTopicDesc] = useState('');
-  const [topicFree, setTopicFree] = useState(false);
-  const [topicPublished, setTopicPublished] = useState(true);
+  useEffect(() => {
+    if (!routeCourseId && firstCourseId) {
+      navigate(`/admin/builder/${firstCourseId}`, { replace: true });
+    }
+  }, [routeCourseId, firstCourseId, navigate]);
 
-  // Lesson form
-  const [lessonTitle, setLessonTitle] = useState('');
-  const [lessonAccessTier, setLessonAccessTier] = useState<AccessTier>('free');
-  const [lessonPublished, setLessonPublished] = useState(true);
-
-  // Test form
-  const [testTitle, setTestTitle] = useState('');
-  const [testDesc, setTestDesc] = useState('');
-  const [testDuration, setTestDuration] = useState('30');
-  const [testStart, setTestStart] = useState('');
-  const [testEnd, setTestEnd] = useState('');
-  const [testTotalMarks, setTestTotalMarks] = useState('10');
-  const [testPassing, setTestPassing] = useState('6');
-  const [testNegative, setTestNegative] = useState(false);
-  const [testAccessTier, setTestAccessTier] = useState<AccessTier>('free');
-  const [testPublished, setTestPublished] = useState(false);
-
-  // Section form
-  const [sectionForm, setSectionForm] = useState<SectionFormValues>(emptySectionForm('video'));
-
-  const courseId = routeCourseId || null;
-
-  const { data: treeRes, isLoading } = useQuery({
+  const { data: treeRes, isLoading, refetch } = useQuery({
     queryKey: ['admin-course-tree', courseId],
     queryFn: () => api.get(`/courses/admin/${courseId}`),
     enabled: !!courseId,
@@ -129,6 +67,41 @@ export const CourseBuilder: React.FC = () => {
   const topics = course?.topics || [];
   const tests = course?.tests || course?.testSeries || [];
 
+  const [selection, setSelection] = useState<BuilderSelection>({ kind: 'course' });
+  const [activeSectionIdx, setActiveSectionIdx] = useState(0);
+  const [activeQuestionIdx, setActiveQuestionIdx] = useState(0);
+  const [modalState, setModalState] = useState<ModalState>(null);
+  const [statusMsg, setStatusMsg] = useState('');
+  const [outlineOpen, setOutlineOpen] = useState(false);
+  const hasInitialized = useRef(false);
+
+  // Initialize selection to first lesson of first topic
+  useEffect(() => {
+    if (hasInitialized.current || !course) return;
+    for (const t of topics) {
+      if (t.lessons && t.lessons.length > 0) {
+        setSelection({ kind: 'lesson', id: t.lessons[0]._id, topicId: t._id, sectionIdx: 0 });
+        hasInitialized.current = true;
+        return;
+      }
+    }
+    if (topics.length > 0) {
+      setSelection({ kind: 'topic', id: topics[0]._id });
+      hasInitialized.current = true;
+    }
+  }, [course, topics]);
+
+  const showToast = (msg: string) => {
+    setStatusMsg(msg);
+    setTimeout(() => setStatusMsg(''), 3500);
+  };
+
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['admin-course-tree', courseId] });
+    await refetch();
+  };
+
+  // Helper finders
   const findTopic = (id: string) => topics.find((t: any) => t._id === id);
   const findLesson = (id: string) => {
     for (const t of topics) {
@@ -137,1085 +110,567 @@ export const CourseBuilder: React.FC = () => {
     }
     return null;
   };
-  const findSection = (id: string) => {
-    for (const t of topics) {
-      for (const l of t.lessons || []) {
-        const s = (l.sections || []).find((x: any) => x._id === id);
-        if (s) return { section: s, parentKind: 'lesson' as const, parentId: l._id };
-      }
-      const p = (t.practiceQuestions || []).find((x: any) => x._id === id);
-      if (p) return { section: p, parentKind: 'practice' as const, parentId: t._id };
-    }
-    for (const test of tests) {
-      for (const sec of test.sections || []) {
-        const q = (sec.questions || []).find((x: any) => x._id === id || x === id);
-        if (q && typeof q === 'object') {
-          return { section: q, parentKind: 'test' as const, parentId: test._id };
-        }
-      }
-    }
-    return null;
-  };
   const findTest = (id: string) => tests.find((t: any) => t._id === id);
 
-  useEffect(() => {
-    if (!course) return;
-    setCourseTitle(course.title || '');
-    setCourseDesc(course.description || '');
-    const basicP = course.pricing?.basic?.price ?? course.price ?? 49900;
-    const plusP = course.pricing?.plus?.price ?? (basicP * 2);
-    const premP = course.pricing?.premium?.price ?? (basicP * 3);
-    setBasicPrice(String(Math.round(basicP / 100)));
-    setPlusPrice(String(Math.round(plusP / 100)));
-    setPremiumPrice(String(Math.round(premP / 100)));
-    setCoursePublished(!!course.isPublished);
-  }, [course?._id]);
-
-  useEffect(() => {
-    if (selection.kind === 'topic') {
-      const t = findTopic(selection.id);
-      if (t) {
-        setTopicTitle(t.title || '');
-        setTopicDesc(t.description || '');
-        setTopicFree(!!t.isFree);
-        setTopicPublished(t.isPublished !== false);
+  /* ─── Handlers for Lessons ─────────────────────────────────────────────── */
+  const handleSaveLesson = async (data: { title: string; accessTier: AccessTier; isPublished: boolean }) => {
+    if (!modalState || modalState.type !== 'lesson-settings') return;
+    const lesson = modalState.lesson;
+    if (lesson._id) {
+      await api.put(`/lessons/lessons/${lesson._id}`, data);
+      showToast('Lesson updated.');
+    } else {
+      const res = await api.post('/lessons/lessons', { ...data, topicId: lesson.topicId, order: 99 });
+      const newLesson = res.data?.data;
+      if (newLesson) {
+        setSelection({ kind: 'lesson', id: newLesson._id, topicId: lesson.topicId, sectionIdx: 0 });
       }
-    } else if (selection.kind === 'new-topic') {
-      setTopicTitle('');
-      setTopicDesc('');
-      setTopicFree(false);
-      setTopicPublished(true);
-    } else if (selection.kind === 'lesson') {
-      const found = findLesson(selection.id);
-      if (found) {
-        setLessonTitle(found.lesson.title || '');
-        setLessonPublished(found.lesson.isPublished !== false);
-        setLessonAccessTier(found.lesson.accessTier || 'free');
-      }
-    } else if (selection.kind === 'new-lesson') {
-      setLessonTitle('');
-      setLessonPublished(true);
-      setLessonAccessTier('free');
-    } else if (selection.kind === 'test') {
-      const t = findTest(selection.id);
-      if (t) {
-        setTestTitle(t.title || '');
-        setTestDesc(t.description || '');
-        setTestDuration(String(t.duration || 30));
-        setTestStart(t.startTime ? new Date(t.startTime).toISOString().slice(0, 16) : '');
-        setTestEnd(t.endTime ? new Date(t.endTime).toISOString().slice(0, 16) : '');
-        setTestTotalMarks(String(t.totalMarks || 0));
-        setTestPassing(String(t.passingMarks || 0));
-        setTestNegative(!!t.negativeMarkingEnabled);
-        setTestAccessTier(t.accessTier || 'free');
-        setTestPublished(!!t.isPublished);
-      }
-    } else if (selection.kind === 'new-test') {
-      const now = new Date();
-      const later = new Date(Date.now() + 7 * 86400000);
-      setTestTitle('');
-      setTestDesc('');
-      setTestDuration('30');
-      setTestStart(now.toISOString().slice(0, 16));
-      setTestEnd(later.toISOString().slice(0, 16));
-      setTestTotalMarks('10');
-      setTestPassing('6');
-      setTestNegative(false);
-      setTestAccessTier('free');
-      setTestPublished(false);
-    } else if (selection.kind === 'section') {
-      const found = findSection(selection.id);
-      if (found) setSectionForm(sectionToForm(found.section));
-    } else if (selection.kind === 'new-section') {
-      setSectionForm(emptySectionForm(selection.type || (selection.parentKind === 'lesson' ? 'video' : 'question')));
+      showToast('Lesson created.');
     }
-  }, [selection, course]);
-
-  const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['admin-course-tree', courseId] });
-    await queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+    await invalidate();
   };
 
-  const toggleExpand = (key: string) => {
-    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const publishBadge = (published: boolean) =>
-    published ? null : (
-      <span style={{ marginLeft: 6, fontSize: '0.65rem', color: 'var(--warning)', fontWeight: 700 }}>HIDDEN</span>
-    );
-
-  const tierBadge = (tier?: string) => {
-    const t = tier || 'free';
-    const colors: Record<string, { bg: string; color: string; label: string }> = {
-      free: { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', label: 'FREE' },
-      basic: { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', label: 'BASIC' },
-      plus: { bg: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', label: 'PLUS' },
-      premium: { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', label: 'PREM' },
-    };
-    const conf = colors[t] || colors.free;
-    return (
-      <span
-        style={{
-          marginLeft: 6,
-          padding: '1px 6px',
-          borderRadius: 4,
-          fontSize: '0.62rem',
-          fontWeight: 800,
-          letterSpacing: '0.04em',
-          background: conf.bg,
-          color: conf.color,
-          flexShrink: 0,
-        }}
-      >
-        {conf.label}
-      </span>
-    );
-  };
-
-  // --- Create course (no id yet) ---
-  const handleCreateCourse = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setStatusMsg('');
-    try {
-      const bPrice = Math.max(0, parseInt(basicPrice, 10) || 0) * 100;
-      const pPrice = Math.max(0, parseInt(plusPrice, 10) || 0) * 100;
-      const premPrice = Math.max(0, parseInt(premiumPrice, 10) || 0) * 100;
-
-      const res = await api.post('/courses', {
-        title: courseTitle,
-        description: courseDesc,
-        price: bPrice,
-        pricing: {
-          basic: { price: bPrice },
-          plus: { price: pPrice },
-          premium: { price: premPrice },
-        },
-        isPublished: coursePublished,
-      });
-      const id = res.data.data._id;
-      setStatusMsg('Course created.');
-      queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
-      navigate(`/admin/builder/${id}`, { replace: true });
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to create course');
-    } finally {
-      setSaving(false);
+  /* ─── Handlers for Sections ────────────────────────────────────────────── */
+  const handleSaveSection = async (payload: any) => {
+    if (!modalState) return;
+    if (modalState.type === 'section-edit' && modalState.section?._id) {
+      await api.put(`/lessons/sections/${modalState.section._id}`, payload);
+      showToast('Section saved.');
+    } else if (modalState.type === 'section-new') {
+      await api.post('/lessons/sections', payload);
+      showToast('Section added.');
     }
+    await invalidate();
   };
 
-  const handleSaveCourse = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!courseId) return handleCreateCourse(e);
-    setSaving(true);
+  const handleDeleteSection = async (sectionId: string) => {
+    if (!window.confirm('Delete this section? This cannot be undone.')) return;
     try {
-      const bPrice = Math.max(0, parseInt(basicPrice, 10) || 0) * 100;
-      const pPrice = Math.max(0, parseInt(plusPrice, 10) || 0) * 100;
-      const premPrice = Math.max(0, parseInt(premiumPrice, 10) || 0) * 100;
-
-      await api.put(`/courses/${courseId}`, {
-        title: courseTitle,
-        description: courseDesc,
-        price: bPrice,
-        pricing: {
-          basic: { price: bPrice },
-          plus: { price: pPrice },
-          premium: { price: premPrice },
-        },
-        isPublished: coursePublished,
-      });
-      setStatusMsg('Course details saved.');
+      await api.delete(`/lessons/sections/${sectionId}`);
+      showToast('Section removed.');
+      setActiveSectionIdx(0);
       await invalidate();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save course');
-    } finally {
-      setSaving(false);
+      alert(err?.response?.data?.error || 'Failed to delete section');
     }
   };
 
-  const handleSaveTopic = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!courseId) return;
-    setSaving(true);
-    try {
-      if (selection.kind === 'new-topic') {
-        const res = await api.post('/lessons/topics', {
-          courseId,
-          title: topicTitle,
-          description: topicDesc,
-          isFree: topicFree,
-          isPublished: topicPublished,
-          order: topics.length + 1,
-        });
-        setStatusMsg('Topic added.');
-        setExpanded((p) => ({ ...p, [`topic-${res.data.data._id}`]: true }));
-        setSelection({ kind: 'topic', id: res.data.data._id });
-      } else if (selection.kind === 'topic') {
-        await api.put(`/lessons/topics/${selection.id}`, {
-          title: topicTitle,
-          description: topicDesc,
-          isFree: topicFree,
-          isPublished: topicPublished,
-        });
-        setStatusMsg('Topic saved.');
+  /* ─── Handlers for Chapters (Topics) ──────────────────────────────────── */
+  const handleSaveTopic = async (data: { title: string; description: string; isFree: boolean; isPublished: boolean }) => {
+    if (!modalState || modalState.type !== 'topic-settings') return;
+    const topic = modalState.topic;
+    if (topic?._id) {
+      await api.put(`/lessons/topics/${topic._id}`, data);
+      showToast('Chapter updated.');
+    } else {
+      const res = await api.post('/lessons/topics', { ...data, courseId, order: topics.length });
+      const newTopic = res.data?.data;
+      if (newTopic) {
+        setSelection({ kind: 'topic', id: newTopic._id });
       }
-      await invalidate();
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save topic');
-    } finally {
-      setSaving(false);
+      showToast('Chapter created.');
     }
+    await invalidate();
   };
 
-  const handleDeleteTopic = async (id: string) => {
-    if (!confirmDelete('this topic and all its lessons, practice questions, and content')) return;
+  const handleDeleteTopic = async (topicId: string) => {
     try {
-      await api.delete(`/lessons/topics/${id}`);
+      await api.delete(`/lessons/topics/${topicId}`);
+      showToast('Chapter removed.');
       setSelection({ kind: 'course' });
-      setStatusMsg('Topic removed.');
       await invalidate();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete topic');
+      alert(err?.response?.data?.error || 'Failed to delete chapter');
     }
   };
 
-  const handleSaveLesson = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!courseId) return;
-    setSaving(true);
-    try {
-      if (selection.kind === 'new-lesson') {
-        const topic = findTopic(selection.topicId);
-        const res = await api.post('/lessons/lessons', {
-          topicId: selection.topicId,
-          courseId,
-          title: lessonTitle,
-          accessTier: lessonAccessTier,
-          isPublished: lessonPublished,
-          order: (topic?.lessons?.length || 0) + 1,
-        });
-        setStatusMsg('Lesson added.');
-        setExpanded((p) => ({ ...p, [`lesson-${res.data.data._id}`]: true }));
-        setSelection({ kind: 'lesson', id: res.data.data._id, topicId: selection.topicId });
-      } else if (selection.kind === 'lesson') {
-        await api.put(`/lessons/lessons/${selection.id}`, {
-          title: lessonTitle,
-          accessTier: lessonAccessTier,
-          isPublished: lessonPublished,
-        });
-        setStatusMsg('Lesson saved.');
-      }
-      await invalidate();
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save lesson');
-    } finally {
-      setSaving(false);
-    }
-  };
+  /* ─── Handlers for Moving Chapters & Lessons ──────────────────────────── */
+  const handleMoveTopic = async (topicId: string, direction: 'up' | 'down') => {
+    const idx = topics.findIndex((t: any) => t._id === topicId);
+    if (idx < 0) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= topics.length) return;
 
-  const handleDeleteLesson = async (id: string) => {
-    if (!confirmDelete('this lesson and all its videos/questions')) return;
-    try {
-      await api.delete(`/lessons/lessons/${id}`);
-      setSelection({ kind: 'course' });
-      setStatusMsg('Lesson removed.');
-      await invalidate();
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete lesson');
-    }
-  };
+    const newTopics = [...topics];
+    const [moved] = newTopics.splice(idx, 1);
+    newTopics.splice(targetIdx, 0, moved);
 
-  const handleSaveSection = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
     try {
-      if (selection.kind === 'new-section') {
-        let order = 1;
-        if (selection.parentKind === 'lesson') {
-          const found = findLesson(selection.parentId);
-          order = (found?.lesson.sections?.length || 0) + 1;
-        } else if (selection.parentKind === 'practice') {
-          const t = findTopic(selection.parentId);
-          order = (t?.practiceQuestions?.length || 0) + 1;
-        } else {
-          const t = findTest(selection.parentId);
-          order =
-            (t?.sections || []).reduce(
-              (n: number, s: any) => n + (s.questions?.length || 0),
-              0
-            ) + 1;
-        }
-        const payload = formToPayload(sectionForm, selection.parentId, selection.parentKind, order);
-        const res = await api.post('/lessons/sections', payload);
-        setStatusMsg('Content added.');
-        setSelection({
-          kind: 'section',
-          id: res.data.data._id,
-          parentKind: selection.parentKind,
-          parentId: selection.parentId,
-        });
-      } else if (selection.kind === 'section') {
-        const payload = formToPayload(sectionForm, selection.parentId, selection.parentKind, 1);
-        delete payload.parentId;
-        delete payload.parentType;
-        delete payload.order;
-        await api.put(`/lessons/sections/${selection.id}`, payload);
-        setStatusMsg('Content saved.');
-      }
-      await invalidate();
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save content');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteSection = async (id: string, fromTest = false) => {
-    if (!confirmDelete('this item')) return;
-    try {
-      await api.delete(`/lessons/sections/${id}${fromTest ? '?fromTest=true' : ''}`);
-      setSelection({ kind: 'course' });
-      setStatusMsg('Item removed.');
-      await invalidate();
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete');
-    }
-  };
-
-  const handleSaveTest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!courseId) return;
-    setSaving(true);
-    try {
-      const payload = {
+      await api.post('/lessons/topics/reorder', {
         courseId,
-        title: testTitle,
-        description: testDesc,
-        duration: parseInt(testDuration, 10) || 30,
-        startTime: testStart ? new Date(testStart).toISOString() : new Date().toISOString(),
-        endTime: testEnd ? new Date(testEnd).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
-        totalMarks: parseInt(testTotalMarks, 10) || 0,
-        passingMarks: parseInt(testPassing, 10) || 0,
-        negativeMarkingEnabled: testNegative,
-        accessTier: testAccessTier,
-        isPublished: testPublished,
-      };
-      if (selection.kind === 'new-test') {
-        const res = await api.post('/tests', payload);
-        setStatusMsg('Test added.');
-        setExpanded((p) => ({ ...p, [`test-${res.data.data._id}`]: true }));
-        setSelection({ kind: 'test', id: res.data.data._id });
-      } else if (selection.kind === 'test') {
-        await api.put(`/tests/${selection.id}`, payload);
-        setStatusMsg('Test saved.');
-      }
+        topicIds: newTopics.map((t: any) => t._id),
+      });
+      showToast('Chapter moved.');
       await invalidate();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save test');
-    } finally {
-      setSaving(false);
+      alert(err?.response?.data?.error || 'Failed to move chapter');
     }
   };
 
-  const handleDeleteTest = async (id: string) => {
-    if (!confirmDelete('this test and its owned questions')) return;
+  const handleMoveLesson = async (topicId: string, lessonId: string, direction: 'up' | 'down') => {
+    const topic = findTopic(topicId);
+    if (!topic) return;
+    const lessons = [...(topic.lessons || [])];
+    const idx = lessons.findIndex((l: any) => l._id === lessonId);
+    if (idx < 0) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= lessons.length) return;
+
+    const [moved] = lessons.splice(idx, 1);
+    lessons.splice(targetIdx, 0, moved);
+
     try {
-      await api.delete(`/tests/${id}`);
-      setSelection({ kind: 'course' });
-      setStatusMsg('Test removed.');
+      await api.post('/lessons/lessons/reorder', {
+        topicId,
+        lessonIds: lessons.map((l: any) => l._id),
+      });
+      showToast('Lesson moved.');
       await invalidate();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete test');
+      alert(err?.response?.data?.error || 'Failed to move lesson');
     }
   };
 
-  const sectionLabel = (s: any) => {
-    if (s.title) return s.title;
-    if (s.type === 'video') return `Video ${s.vimeoVideoId || ''}`.trim();
-    if (s.type === 'question') return stripHtml(s.questionText || '').slice(0, 40) || 'Question';
-    return stripHtml(s.text || '').slice(0, 40) || 'Text section';
+  /* ─── Handlers for Practice Sets ───────────────────────────────────────── */
+  const handleSavePractice = async (data: { title: string; accessTier?: AccessTier }) => {
+    if (!modalState || modalState.type !== 'practice-settings') return;
+    const { topicId, setId } = modalState;
+    const topic = findTopic(topicId);
+    if (!topic) return;
+
+    let updatedPracticeSets = [...(topic.practiceSets || [])];
+    if (updatedPracticeSets.length > 0) {
+      if (setId && setId !== 'default') {
+        updatedPracticeSets = updatedPracticeSets.map((ps: any) =>
+          ps._id === setId ? { ...ps, title: data.title, accessTier: data.accessTier || ps.accessTier } : ps
+        );
+      } else {
+        updatedPracticeSets[0] = {
+          ...updatedPracticeSets[0],
+          title: data.title,
+          accessTier: data.accessTier || updatedPracticeSets[0].accessTier,
+        };
+      }
+    } else {
+      const questionIds = (topic.practiceQuestions || []).map((q: any) => q._id || q);
+      updatedPracticeSets = [
+        {
+          title: data.title,
+          description: 'Topic interactive question bank',
+          accessTier: data.accessTier || (topic.isFree ? 'free' : 'basic'),
+          isPublished: true,
+          order: 1,
+          questions: questionIds,
+        },
+      ];
+    }
+
+    await api.put(`/lessons/topics/${topicId}`, { practiceSets: updatedPracticeSets });
+    showToast('Practice set updated.');
+    await invalidate();
   };
 
-  const treeNodeStyle = (active: boolean): React.CSSProperties => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    width: '100%',
-    textAlign: 'left',
-    padding: '6px 8px',
-    borderRadius: 8,
-    border: 'none',
-    background: active ? 'var(--accent-light, rgba(0,0,0,0.06))' : 'transparent',
-    color: active ? 'var(--accent)' : 'var(--text-primary)',
-    fontWeight: active ? 700 : 500,
-    fontSize: '0.82rem',
-    cursor: 'pointer',
-  });
+  /* ─── Handlers for Tests ───────────────────────────────────────────────── */
+  const handleSaveTest = async (payload: any) => {
+    if (!modalState || modalState.type !== 'test-settings') return;
+    const test = modalState.test;
+    if (test?._id) {
+      await api.put(`/tests/${test._id}`, payload);
+      showToast('Test settings updated.');
+    } else {
+      const res = await api.post('/tests', { ...payload, courseId });
+      const newTest = res.data?.data;
+      if (newTest) {
+        setSelection({ kind: 'test', id: newTest._id, questionIdx: 0 });
+      }
+      showToast('Test created.');
+    }
+    await invalidate();
+  };
 
-  // Create-only mode (no course yet)
-  if (!isEditMode) {
+  const handleDeleteTest = async (testId: string) => {
+    try {
+      await api.delete(`/tests/${testId}`);
+      showToast('Test removed.');
+      setSelection({ kind: 'course' });
+      await invalidate();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Failed to delete test');
+    }
+  };
+
+  /* ─── Handlers for Practice Questions ─────────────────────────────────── */
+  const handleDeletePracticeQuestion = async (questionId: string) => {
+    if (!window.confirm('Delete this question from practice set?')) return;
+    try {
+      await api.delete(`/lessons/sections/${questionId}`);
+      showToast('Question deleted.');
+      setActiveQuestionIdx(0);
+      await invalidate();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Failed to delete question');
+    }
+  };
+
+  if (isLoading || !course) {
     return (
-      <div className="animate-fade-in" style={{ maxWidth: 640 }}>
-        <button
-          onClick={() => navigate('/admin')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)', marginBottom: 16 }}
-        >
-          <ArrowLeft size={18} /> Admin Dashboard
-        </button>
-        <h1 style={{ fontSize: '1.6rem', marginBottom: 6 }}>Create New Course</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>
-          Set course details, then manage topics, lessons, banks, and tests in the tree editor.
-        </p>
-        <form onSubmit={handleCreateCourse} className="glass-card" style={{ padding: 24, borderRadius: 'var(--radius-md)' }}>
-          <CourseFields
-            title={courseTitle}
-            setTitle={setCourseTitle}
-            desc={courseDesc}
-            setDesc={setCourseDesc}
-            basicPrice={basicPrice}
-            setBasicPrice={setBasicPrice}
-            plusPrice={plusPrice}
-            setPlusPrice={setPlusPrice}
-            premiumPrice={premiumPrice}
-            setPremiumPrice={setPremiumPrice}
-            published={coursePublished}
-            setPublished={setCoursePublished}
-          />
-          <button type="submit" style={{ ...primaryBtn, width: '100%', marginTop: 8 }} disabled={saving}>
-            {saving ? 'Creating…' : 'Create Course & Open Editor'}
-          </button>
-        </form>
+      <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <p>Loading course builder…</p>
       </div>
     );
   }
 
-  if (isLoading || !course) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>Loading course editor…</div>;
-  }
+  // Active item resolution
+  const activeCurLesson = selection.kind === 'lesson' ? findLesson(selection.id)?.lesson : null;
+  const activeCurTopic =
+    selection.kind === 'lesson'
+      ? findLesson(selection.id)?.topic
+      : selection.kind === 'topic'
+        ? findTopic(selection.id)
+        : selection.kind === 'practice'
+          ? findTopic(selection.topicId)
+          : null;
+  const activeCurTest = selection.kind === 'test' ? findTest(selection.id) : null;
 
   return (
-    <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 24, alignItems: 'start' }}>
-      {/* LEFT OUTLINE */}
-      <aside className="glass-card" style={{ padding: 16, borderRadius: 'var(--radius-md)', position: 'sticky', top: 88, maxHeight: 'calc(100vh - 110px)', overflow: 'auto' }}>
-        <button
-          onClick={() => navigate('/admin')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.8rem' }}
-        >
-          <ArrowLeft size={14} /> Dashboard
-        </button>
-
-        <h3 style={{ fontSize: '0.95rem', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Layers size={16} color="var(--accent)" /> Course Outline
-        </h3>
-
-        <button type="button" style={treeNodeStyle(selection.kind === 'course')} onClick={() => setSelection({ kind: 'course' })}>
-          <BookOpen size={14} />
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{course.title}</span>
-          {publishBadge(!!course.isPublished)}
-        </button>
-
-        <div style={{ marginTop: 10, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Topics</span>
-          <button
-            type="button"
-            onClick={() => setSelection({ kind: 'new-topic' })}
-            style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 2 }}
-            title="Add topic"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-
-        {topics.map((t: any) => (
-          <div key={t._id} style={{ marginBottom: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <button type="button" onClick={() => toggleExpand(`topic-${t._id}`)} style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: 'var(--text-muted)' }}>
-                {expanded[`topic-${t._id}`] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </button>
-              <button
-                type="button"
-                style={treeNodeStyle(selection.kind === 'topic' && selection.id === t._id)}
-                onClick={() => {
-                  setExpanded((p) => ({ ...p, [`topic-${t._id}`]: true }));
-                  setSelection({ kind: 'topic', id: t._id });
-                }}
-              >
-                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
-                {t.isFree && <span style={{ fontSize: '0.65rem', color: 'var(--success)' }}>FREE</span>}
-                {publishBadge(t.isPublished !== false)}
-              </button>
-            </div>
-
-            {expanded[`topic-${t._id}`] && (
-              <div style={{ paddingLeft: 18 }}>
-                {(t.lessons || []).map((l: any) => (
-                  <div key={l._id}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <button type="button" onClick={() => toggleExpand(`lesson-${l._id}`)} style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: 'var(--text-muted)' }}>
-                        {expanded[`lesson-${l._id}`] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                      </button>
-                      <button
-                        type="button"
-                        style={treeNodeStyle(selection.kind === 'lesson' && selection.id === l._id)}
-                        onClick={() => setSelection({ kind: 'lesson', id: l._id, topicId: t._id })}
-                      >
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</span>
-                        {tierBadge(l.accessTier)}
-                        {publishBadge(l.isPublished !== false)}
-                      </button>
-                    </div>
-                    {expanded[`lesson-${l._id}`] && (
-                      <div style={{ paddingLeft: 16 }}>
-                        {(l.sections || []).map((s: any) => (
-                          <button
-                            key={s._id}
-                            type="button"
-                            style={treeNodeStyle(selection.kind === 'section' && selection.id === s._id)}
-                            onClick={() => setSelection({ kind: 'section', id: s._id, parentKind: 'lesson', parentId: l._id })}
-                          >
-                            {s.type === 'video' ? <Video size={12} /> : <FileQuestion size={12} />}
-                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel(s)}</span>
-                            {tierBadge(s.accessTier)}
-                            {publishBadge(s.isPublished !== false)}
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          style={{ ...treeNodeStyle(false), color: 'var(--accent)', fontSize: '0.75rem' }}
-                          onClick={() => setSelection({ kind: 'new-section', parentKind: 'lesson', parentId: l._id })}
-                        >
-                          <Plus size={12} /> Add content
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  style={{ ...treeNodeStyle(selection.kind === 'new-lesson' && selection.topicId === t._id), color: 'var(--accent)', fontSize: '0.75rem' }}
-                  onClick={() => setSelection({ kind: 'new-lesson', topicId: t._id })}
-                >
-                  <Plus size={12} /> Add lesson
-                </button>
-
-                <button
-                  type="button"
-                  style={treeNodeStyle(selection.kind === 'practice-root' && selection.topicId === t._id)}
-                  onClick={() => {
-                    setExpanded((p) => ({ ...p, [`practice-${t._id}`]: true, [`topic-${t._id}`]: true }));
-                    setSelection({ kind: 'practice-root', topicId: t._id });
-                  }}
-                >
-                  <FileQuestion size={12} />
-                  Practice bank ({(t.practiceQuestions || []).length})
-                </button>
-                {expanded[`practice-${t._id}`] || selection.kind === 'practice-root' || (selection.kind === 'section' && selection.parentKind === 'practice' && selection.parentId === t._id) || (selection.kind === 'new-section' && selection.parentKind === 'practice' && selection.parentId === t._id) ? (
-                  <div style={{ paddingLeft: 16 }}>
-                    {(t.practiceQuestions || []).map((q: any) => (
-                      <button
-                        key={q._id}
-                        type="button"
-                        style={treeNodeStyle(selection.kind === 'section' && selection.id === q._id)}
-                        onClick={() => setSelection({ kind: 'section', id: q._id, parentKind: 'practice', parentId: t._id })}
-                      >
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel(q)}</span>
-                        {tierBadge(q.accessTier)}
-                        {publishBadge(q.isPublished !== false)}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      style={{ ...treeNodeStyle(false), color: 'var(--accent)', fontSize: '0.75rem' }}
-                      onClick={() => setSelection({ kind: 'new-section', parentKind: 'practice', parentId: t._id, type: 'question' })}
-                    >
-                      <Plus size={12} /> Add practice question
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <div style={{ marginTop: 14, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tests</span>
-          <button
-            type="button"
-            onClick={() => setSelection({ kind: 'new-test' })}
-            style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 2 }}
-            title="Add test"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-
-        {tests.map((test: any) => (
-          <div key={test._id} style={{ marginBottom: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <button type="button" onClick={() => toggleExpand(`test-${test._id}`)} style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: 'var(--text-muted)' }}>
-                {expanded[`test-${test._id}`] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </button>
-              <button
-                type="button"
-                style={treeNodeStyle(selection.kind === 'test' && selection.id === test._id)}
-                onClick={() => setSelection({ kind: 'test', id: test._id })}
-              >
-                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{test.title}</span>
-                {tierBadge(test.accessTier)}
-                {publishBadge(!!test.isPublished)}
-              </button>
-            </div>
-            {expanded[`test-${test._id}`] && (
-              <div style={{ paddingLeft: 18 }}>
-                {(test.sections || []).flatMap((sec: any) =>
-                  (sec.questions || []).map((q: any) =>
-                    typeof q === 'object' ? (
-                      <button
-                        key={q._id}
-                        type="button"
-                        style={treeNodeStyle(selection.kind === 'section' && selection.id === q._id)}
-                        onClick={() => setSelection({ kind: 'section', id: q._id, parentKind: 'test', parentId: test._id })}
-                      >
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel(q)}</span>
-                        {tierBadge(q.accessTier)}
-                        {publishBadge(q.isPublished !== false)}
-                      </button>
-                    ) : null
-                  )
-                )}
-                <button
-                  type="button"
-                  style={{ ...treeNodeStyle(false), color: 'var(--accent)', fontSize: '0.75rem' }}
-                  onClick={() => setSelection({ kind: 'new-section', parentKind: 'test', parentId: test._id, type: 'question' })}
-                >
-                  <Plus size={12} /> Add question
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+    <div className="lesson-page-container" style={{ position: 'relative', minHeight: '100vh' }}>
+      {/* ─── LEFT CURRICULUM SIDEBAR (STUDENT PARITY + ADMIN CONTROLS) ───── */}
+      <aside
+        className={`lesson-sidebar-desktop ${outlineOpen ? 'drawer-open' : 'admin-outline-closed'}`}
+        style={{ height: '100%', padding: '12px 0 12px 14px' }}
+      >
+        <CurriculumSidebar
+          courseTitle={course.title}
+          topics={topics}
+          currentLessonId={activeCurLesson?._id}
+          currentTopicId={activeCurTopic?._id}
+          completedLessonIds={[]}
+          activeSectionIdx={activeSectionIdx}
+          sectionCount={activeCurLesson?.sections?.length || 0}
+          onOpenLesson={(lessonId) => {
+            const found = findLesson(lessonId);
+            if (found) {
+              setSelection({ kind: 'lesson', id: found.lesson._id, topicId: found.topic._id });
+              setActiveSectionIdx(0);
+            }
+          }}
+          onOpenPractice={(topicId, setId) => {
+            setSelection({ kind: 'practice', topicId, setId, questionIdx: 0 });
+            setActiveQuestionIdx(0);
+          }}
+          onEditPractice={(topicId, ps) => {
+            setModalState({
+              type: 'practice-settings',
+              topicId,
+              setId: ps?._id !== 'default' ? ps?._id : undefined,
+              title: ps?.title || 'Topic practice',
+              accessTier: ps?.accessTier || 'free',
+            });
+          }}
+          onHome={() => navigate('/admin')}
+          isAdmin={true}
+          onEditCourse={() => setSelection({ kind: 'course' })}
+          onAddTopic={() => setModalState({ type: 'topic-settings' })}
+          onEditTopic={(topicId) => {
+            const t = findTopic(topicId);
+            if (t) setModalState({ type: 'topic-settings', topic: t });
+          }}
+          onMoveTopic={handleMoveTopic}
+          onAddLesson={(topicId) => {
+            setModalState({ type: 'lesson-settings', lesson: { topicId, isPublished: true, accessTier: 'free' } });
+          }}
+          onEditLesson={(lessonId) => {
+            const found = findLesson(lessonId);
+            if (found) setModalState({ type: 'lesson-settings', lesson: found.lesson });
+          }}
+          onMoveLesson={handleMoveLesson}
+          tests={tests}
+          currentTestId={activeCurTest?._id}
+          onSelectTest={(testId) => {
+            setSelection({ kind: 'test', id: testId, questionIdx: 0 });
+            setActiveQuestionIdx(0);
+          }}
+          onEditTest={(testId) => {
+            const t = findTest(testId);
+            if (t) setModalState({ type: 'test-settings', test: t });
+          }}
+          onAddTest={() => setModalState({ type: 'test-settings' })}
+        />
       </aside>
 
-      {/* RIGHT PANEL */}
-      <div>
-        <h1 style={{ fontSize: '1.5rem', marginBottom: 4 }}>Edit Course</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 16 }}>
-          Select an item in the outline to edit, hide, or add nested content.
-        </p>
+      {/* ─── MAIN CONTENT PANE ──────────────────────────────────────────── */}
+      <main className="lesson-main-pane sidebar-open" style={{ display: 'flex', flexDirection: 'column' }}>
 
+        {/* Floating Toast Notification */}
         {statusMsg && (
           <div
             style={{
-              marginBottom: 16,
-              padding: '12px 14px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--success-light)',
-              color: 'var(--success)',
-              fontSize: '0.85rem',
-              fontWeight: 600,
+              position: 'fixed',
+              top: 54,
+              right: 24,
+              zIndex: 9999,
+              padding: '10px 18px',
+              borderRadius: 'var(--radius-full)',
+              background: '#16a34a',
+              color: '#ffffff',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
             }}
           >
-            {statusMsg}
+            <span>{statusMsg}</span>
+            <button
+              type="button"
+              onClick={() => setStatusMsg('')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+            >
+              <X size={14} />
+            </button>
           </div>
         )}
 
-        <div className="glass-card" style={{ padding: 24, borderRadius: 'var(--radius-md)' }}>
-          {selection.kind === 'course' && (
-            <form onSubmit={handleSaveCourse}>
-              <h2 style={{ fontSize: '1.15rem', marginBottom: 16 }}>Course Details</h2>
-              <CourseFields
-                title={courseTitle}
-                setTitle={setCourseTitle}
-                desc={courseDesc}
-                setDesc={setCourseDesc}
-                basicPrice={basicPrice}
-                setBasicPrice={setBasicPrice}
-                plusPrice={plusPrice}
-                setPlusPrice={setPlusPrice}
-                premiumPrice={premiumPrice}
-                setPremiumPrice={setPremiumPrice}
-                published={coursePublished}
-                setPublished={setCoursePublished}
-              />
-              <button type="submit" style={primaryBtn} disabled={saving}>
-                {saving ? 'Saving…' : 'Save Course'}
-              </button>
-            </form>
+        {/* ─── RENDER EXACT STUDENT VIEW ACCORDING TO SELECTION ─────────── */}
+        <div style={{ flex: 1, padding: '24px 28px', overflowY: 'auto' }}>
+          {selection.kind === 'lesson' && activeCurLesson && (
+            <AuthorLessonView
+              lesson={activeCurLesson}
+              topicTitle={activeCurTopic?.title}
+              activeSectionIdx={activeSectionIdx}
+              onSelectSectionIdx={setActiveSectionIdx}
+              onEditLesson={() => setModalState({ type: 'lesson-settings', lesson: activeCurLesson })}
+              onEditSection={(section) =>
+                setModalState({
+                  type: 'section-edit',
+                  section,
+                  parentId: activeCurLesson._id,
+                  parentType: 'lesson',
+                  order: activeSectionIdx,
+                })
+              }
+              onAddSection={(initialType) =>
+                setModalState({
+                  type: 'section-new',
+                  parentId: activeCurLesson._id,
+                  parentType: 'lesson',
+                  order: (activeCurLesson.sections?.length || 0),
+                  initialType,
+                })
+              }
+              onDeleteSection={handleDeleteSection}
+              onBackToOverview={() => {
+                if (activeCurTopic) setSelection({ kind: 'topic', id: activeCurTopic._id });
+                else setSelection({ kind: 'course' });
+              }}
+            />
           )}
 
-          {(selection.kind === 'topic' || selection.kind === 'new-topic') && (
-            <form onSubmit={handleSaveTopic}>
-              <h2 style={{ fontSize: '1.15rem', marginBottom: 16 }}>
-                {selection.kind === 'new-topic' ? 'Add Topic' : 'Edit Topic'}
-              </h2>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Title</label>
-                <input type="text" required value={topicTitle} onChange={(e) => setTopicTitle(e.target.value)} style={inputStyle} />
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Description</label>
-                <RichTextEditor
-                  variant="compact"
-                  value={topicDesc}
-                  onChange={setTopicDesc}
-                  placeholder="Topic overview…"
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 20, marginBottom: 18 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={topicFree} onChange={(e) => setTopicFree(e.target.checked)} style={{ width: 18, height: 18 }} />
-                  Free preview
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={topicPublished} onChange={(e) => setTopicPublished(e.target.checked)} style={{ width: 18, height: 18 }} />
-                  Published
-                </label>
-              </div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button type="submit" style={primaryBtn} disabled={saving}>
-                  {saving ? 'Saving…' : selection.kind === 'new-topic' ? 'Add Topic' : 'Save Topic'}
-                </button>
-                {selection.kind === 'topic' && (
-                  <>
-                    <button type="button" style={ghostBtn} onClick={() => setSelection({ kind: 'new-lesson', topicId: selection.id })}>
-                      <Plus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Add Lesson
-                    </button>
-                    <button
-                      type="button"
-                      style={ghostBtn}
-                      onClick={() => setSelection({ kind: 'new-section', parentKind: 'practice', parentId: selection.id, type: 'question' })}
-                    >
-                      Add Practice Q
-                    </button>
-                    <button type="button" style={dangerBtn} onClick={() => handleDeleteTopic(selection.id)}>
-                      <Trash2 size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Remove
-                    </button>
-                  </>
-                )}
-              </div>
-            </form>
-          )}
+          {selection.kind === 'practice' && activeCurTopic && (() => {
+            const activePracticeSet =
+              (activeCurTopic.practiceSets || []).find((ps: any) => ps._id === selection.setId) ||
+              (activeCurTopic.practiceSets || [])[0];
+            const practiceTitle = activePracticeSet?.title || (activeCurTopic.practiceQuestions?.length ? 'Topic practice' : undefined);
+            const practiceQuestions =
+              activePracticeSet?.questions && activePracticeSet.questions.length > 0
+                ? activePracticeSet.questions
+                : activeCurTopic.practiceQuestions || [];
 
-          {(selection.kind === 'lesson' || selection.kind === 'new-lesson') && (
-            <form onSubmit={handleSaveLesson}>
-              <h2 style={{ fontSize: '1.15rem', marginBottom: 16 }}>
-                {selection.kind === 'new-lesson' ? 'Add Lesson' : 'Edit Lesson'}
-              </h2>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Title</label>
-                <input type="text" required value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} style={inputStyle} />
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6, fontWeight: 600 }}>
-                  Required Access Tier
-                </label>
-                <select
-                  value={lessonAccessTier}
-                  onChange={(e) => setLessonAccessTier(e.target.value as AccessTier)}
-                  style={inputStyle}
-                >
-                  <option value="free">Free Preview (Available to all students)</option>
-                  <option value="basic">Basic (Basic, Plus, and Premium plans)</option>
-                  <option value="plus">Plus (Plus and Premium plans)</option>
-                  <option value="premium">Premium (Premium plan only)</option>
-                </select>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Students below this tier will see a lock and will be prompted to upgrade.
-                </span>
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: 'pointer', marginBottom: 18 }}>
-                <input type="checkbox" checked={lessonPublished} onChange={(e) => setLessonPublished(e.target.checked)} style={{ width: 18, height: 18 }} />
-                Published
-              </label>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button type="submit" style={primaryBtn} disabled={saving}>
-                  {saving ? 'Saving…' : selection.kind === 'new-lesson' ? 'Add Lesson' : 'Save Lesson'}
-                </button>
-                {selection.kind === 'lesson' && (
-                  <>
-                    <button
-                      type="button"
-                      style={ghostBtn}
-                      onClick={() => setSelection({ kind: 'new-section', parentKind: 'lesson', parentId: selection.id })}
-                    >
-                      Add Video / Question
-                    </button>
-                    <button type="button" style={dangerBtn} onClick={() => handleDeleteLesson(selection.id)}>
-                      Remove
-                    </button>
-                  </>
-                )}
-              </div>
-            </form>
-          )}
-
-          {selection.kind === 'practice-root' && (
-            <div>
-              <h2 style={{ fontSize: '1.15rem', marginBottom: 8 }}>Practice Question Bank</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 16 }}>
-                Topic: {findTopic(selection.topicId)?.title}
-              </p>
-              <button
-                type="button"
-                style={primaryBtn}
-                onClick={() =>
-                  setSelection({
-                    kind: 'new-section',
-                    parentKind: 'practice',
-                    parentId: selection.topicId,
-                    type: 'question',
+            return (
+              <AuthorPracticeView
+                topicTitle={activeCurTopic.title}
+                practiceTitle={practiceTitle}
+                questions={practiceQuestions}
+                activeIdx={activeQuestionIdx}
+                onSelectIdx={setActiveQuestionIdx}
+                onEditPractice={() =>
+                  setModalState({
+                    type: 'practice-settings',
+                    topicId: activeCurTopic._id,
+                    setId: activePracticeSet?._id !== 'default' ? activePracticeSet?._id : undefined,
+                    title: activePracticeSet?.title || 'Topic practice',
+                    accessTier: activePracticeSet?.accessTier || 'free',
                   })
                 }
-              >
-                Add Practice Question
-              </button>
-            </div>
-          )}
-
-          {(selection.kind === 'section' || selection.kind === 'new-section') && (
-            <form onSubmit={handleSaveSection}>
-              <h2 style={{ fontSize: '1.15rem', marginBottom: 16 }}>
-                {selection.kind === 'new-section'
-                  ? selection.parentKind === 'practice'
-                    ? 'Add Practice Question'
-                    : selection.parentKind === 'test'
-                      ? 'Add Test Question'
-                      : 'Add Lesson Content'
-                  : 'Edit Content'}
-              </h2>
-              <SectionEditor
-                value={sectionForm}
-                onChange={setSectionForm}
-                allowTypeChange={selection.kind === 'new-section' && selection.parentKind === 'lesson'}
-                forceType={
-                  selection.kind === 'new-section' && selection.parentKind !== 'lesson'
-                    ? 'question'
-                    : selection.kind === 'section' && selection.parentKind !== 'lesson'
-                      ? 'question'
-                      : undefined
+                onAddQuestion={() =>
+                  setModalState({
+                    type: 'section-new',
+                    parentId: activeCurTopic._id,
+                    parentType: 'practice',
+                    order: practiceQuestions.length,
+                    initialType: 'question',
+                  })
                 }
+                onEditQuestion={(question) =>
+                  setModalState({
+                    type: 'section-edit',
+                    section: question,
+                    parentId: activeCurTopic._id,
+                    parentType: 'practice',
+                    order: activeQuestionIdx,
+                  })
+                }
+                onDeleteQuestion={handleDeletePracticeQuestion}
+                onBackToOverview={() => setSelection({ kind: 'topic', id: activeCurTopic._id })}
               />
-              <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
-                <button type="submit" style={primaryBtn} disabled={saving}>
-                  {saving ? 'Saving…' : selection.kind === 'new-section' ? 'Add' : 'Save'}
-                </button>
-                {selection.kind === 'section' && (
-                  <button
-                    type="button"
-                    style={dangerBtn}
-                    onClick={() => handleDeleteSection(selection.id, selection.parentKind === 'test')}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </form>
+            );
+          })()}
+
+          {selection.kind === 'test' && activeCurTest && (
+            <AuthorTestView
+              test={activeCurTest}
+              questions={
+                activeCurTest.sections?.flatMap((s: any) =>
+                  (s.questions || []).map((q: any) => (typeof q === 'object' ? { ...q, sectionName: s.name } : q))
+                ) || []
+              }
+              activeIdx={activeQuestionIdx}
+              onSelectIdx={setActiveQuestionIdx}
+              onEditSettings={() => setModalState({ type: 'test-settings', test: activeCurTest })}
+              onAddQuestion={() => {
+                const targetSec = activeCurTest.sections?.[0];
+                setModalState({
+                  type: 'section-new',
+                  parentId: targetSec?._id || activeCurTest._id,
+                  parentType: 'test',
+                  order: (targetSec?.questions?.length || 0),
+                  initialType: 'question',
+                });
+              }}
+              onEditQuestion={(question) =>
+                setModalState({
+                  type: 'section-edit',
+                  section: question,
+                  parentId: activeCurTest._id,
+                  parentType: 'test',
+                  order: activeQuestionIdx,
+                })
+              }
+              onDeleteQuestion={async (questionId) => {
+                if (!window.confirm('Delete question from this test?')) return;
+                await api.delete(`/lessons/sections/${questionId}`);
+                showToast('Question deleted.');
+                setActiveQuestionIdx(0);
+                await invalidate();
+              }}
+              onBackToOverview={() => setSelection({ kind: 'course' })}
+            />
           )}
 
-          {(selection.kind === 'test' || selection.kind === 'new-test') && (
-            <form onSubmit={handleSaveTest}>
-              <h2 style={{ fontSize: '1.15rem', marginBottom: 16 }}>
-                {selection.kind === 'new-test' ? 'Add Test' : 'Edit Test'}
-              </h2>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Title</label>
-                <input type="text" required value={testTitle} onChange={(e) => setTestTitle(e.target.value)} style={inputStyle} />
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Description</label>
-                <RichTextEditor
-                  variant="compact"
-                  value={testDesc}
-                  onChange={setTestDesc}
-                  placeholder="Test instructions or description…"
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Duration (min)</label>
-                  <input type="number" value={testDuration} onChange={(e) => setTestDuration(e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Total Marks</label>
-                  <input type="number" value={testTotalMarks} onChange={(e) => setTestTotalMarks(e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Passing Marks</label>
-                  <input type="number" value={testPassing} onChange={(e) => setTestPassing(e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Start</label>
-                  <input type="datetime-local" value={testStart} onChange={(e) => setTestStart(e.target.value)} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>End</label>
-                  <input type="datetime-local" value={testEnd} onChange={(e) => setTestEnd(e.target.value)} style={inputStyle} />
-                </div>
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6, fontWeight: 600 }}>
-                  Required Access Tier
-                </label>
-                <select
-                  value={testAccessTier}
-                  onChange={(e) => setTestAccessTier(e.target.value as AccessTier)}
-                  style={inputStyle}
-                >
-                  <option value="free">Free Preview (Available to all students)</option>
-                  <option value="basic">Basic (Basic, Plus, and Premium plans)</option>
-                  <option value="plus">Plus (Plus and Premium plans)</option>
-                  <option value="premium">Premium (Premium plan only)</option>
-                </select>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Students below this tier will see a lock and will be prompted to upgrade.
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 20, marginBottom: 18 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={testNegative} onChange={(e) => setTestNegative(e.target.checked)} style={{ width: 18, height: 18 }} />
-                  Negative marking
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={testPublished} onChange={(e) => setTestPublished(e.target.checked)} style={{ width: 18, height: 18 }} />
-                  Published
-                </label>
-              </div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button type="submit" style={primaryBtn} disabled={saving}>
-                  {saving ? 'Saving…' : selection.kind === 'new-test' ? 'Add Test' : 'Save Test'}
-                </button>
-                {selection.kind === 'test' && (
-                  <>
-                    <button
-                      type="button"
-                      style={ghostBtn}
-                      onClick={() => setSelection({ kind: 'new-section', parentKind: 'test', parentId: selection.id, type: 'question' })}
-                    >
-                      Add Question
-                    </button>
-                    <button type="button" style={dangerBtn} onClick={() => handleDeleteTest(selection.id)}>
-                      Remove
-                    </button>
-                  </>
-                )}
-              </div>
-            </form>
+          {selection.kind === 'topic' && activeCurTopic && (
+            <AuthorChapterView
+              topic={activeCurTopic}
+              onEditTopic={() => setModalState({ type: 'topic-settings', topic: activeCurTopic })}
+              onAddLesson={() =>
+                setModalState({
+                  type: 'lesson-settings',
+                  lesson: { topicId: activeCurTopic._id, isPublished: true, accessTier: 'free' },
+                })
+              }
+              onSelectLesson={(lessonId) => {
+                setSelection({ kind: 'lesson', id: lessonId, topicId: activeCurTopic._id });
+                setActiveSectionIdx(0);
+              }}
+              onMoveLesson={(lessonId, direction) => handleMoveLesson(activeCurTopic._id, lessonId, direction)}
+              onSelectPractice={() => {
+                setSelection({ kind: 'practice', topicId: activeCurTopic._id });
+                setActiveQuestionIdx(0);
+              }}
+              onAddPracticeQuestion={() =>
+                setModalState({
+                  type: 'section-new',
+                  parentId: activeCurTopic._id,
+                  parentType: 'practice',
+                  order: (activeCurTopic.practiceQuestions?.length || 0),
+                  initialType: 'question',
+                })
+              }
+              onSelectTest={(testId) => {
+                setSelection({ kind: 'test', id: testId });
+                setActiveQuestionIdx(0);
+              }}
+              onAddTest={() => setModalState({ type: 'test-settings' })}
+            />
+          )}
+
+          {selection.kind === 'course' && (
+            <AuthorCourseOverview
+              course={course}
+              onEditCourse={() => {
+                const title = prompt('Edit Course Title:', course.title);
+                if (title && title.trim()) {
+                  api.put(`/courses/${course._id}`, { title: title.trim() }).then(() => {
+                    showToast('Course updated.');
+                    invalidate();
+                  });
+                }
+              }}
+              onAddTopic={() => setModalState({ type: 'topic-settings' })}
+              onSelectTopic={(topicId) => setSelection({ kind: 'topic', id: topicId })}
+              onMoveTopic={handleMoveTopic}
+            />
           )}
         </div>
-      </div>
+      </main>
+
+      {/* ─── AUTHORING MODALS (CLEAN & NON-INTRUSIVE) ───────────────────── */}
+      {modalState?.type === 'lesson-settings' && (
+        <LessonSettingsModal
+          lesson={modalState.lesson}
+          onClose={() => setModalState(null)}
+          onSave={handleSaveLesson}
+          onRefresh={invalidate}
+        />
+      )}
+
+      {(modalState?.type === 'section-edit' || modalState?.type === 'section-new') && (
+        <SectionModal
+          section={modalState.type === 'section-edit' ? modalState.section : undefined}
+          parentId={modalState.parentId}
+          parentType={modalState.parentType}
+          order={modalState.order}
+          initialType={modalState.type === 'section-new' ? modalState.initialType : undefined}
+          onClose={() => setModalState(null)}
+          onSave={handleSaveSection}
+          onDelete={
+            modalState.type === 'section-edit' && modalState.section?._id
+              ? () => handleDeleteSection(modalState.section._id)
+              : undefined
+          }
+        />
+      )}
+
+      {modalState?.type === 'topic-settings' && (
+        <ChapterModal
+          topic={modalState.topic}
+          onClose={() => setModalState(null)}
+          onSave={handleSaveTopic}
+          onDelete={
+            modalState.topic?._id ? () => handleDeleteTopic(modalState.topic._id) : undefined
+          }
+        />
+      )}
+
+      {modalState?.type === 'practice-settings' && (
+        <PracticeSettingsModal
+          title={modalState.title}
+          accessTier={modalState.accessTier}
+          onClose={() => setModalState(null)}
+          onSave={handleSavePractice}
+        />
+      )}
+
+      {modalState?.type === 'test-settings' && (
+        <TestSettingsModal
+          test={modalState.test}
+          onClose={() => setModalState(null)}
+          onSave={handleSaveTest}
+          onDelete={
+            modalState.test?._id ? () => handleDeleteTest(modalState.test._id) : undefined
+          }
+        />
+      )}
     </div>
   );
 };
-
-const CourseFields: React.FC<{
-  title: string;
-  setTitle: (v: string) => void;
-  desc: string;
-  setDesc: (v: string) => void;
-  basicPrice: string;
-  setBasicPrice: (v: string) => void;
-  plusPrice: string;
-  setPlusPrice: (v: string) => void;
-  premiumPrice: string;
-  setPremiumPrice: (v: string) => void;
-  published: boolean;
-  setPublished: (v: boolean) => void;
-}> = ({
-  title,
-  setTitle,
-  desc,
-  setDesc,
-  basicPrice,
-  setBasicPrice,
-  plusPrice,
-  setPlusPrice,
-  premiumPrice,
-  setPremiumPrice,
-  published,
-  setPublished,
-}) => (
-  <>
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Course Title</label>
-      <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} />
-    </div>
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 6 }}>Description</label>
-      <RichTextEditor
-        variant="compact"
-        value={desc}
-        onChange={setDesc}
-        placeholder="Course description…"
-      />
-    </div>
-
-    <div style={{ marginBottom: 16 }}>
-      <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 8, fontWeight: 700 }}>
-        Tiered Pricing (₹ INR)
-      </label>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <div style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent)' }}>Basic Tier</span>
-            <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: 4, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', fontWeight: 800 }}>TIER 1</span>
-          </div>
-          <input
-            type="number"
-            required
-            value={basicPrice}
-            onChange={(e) => setBasicPrice(e.target.value)}
-            style={inputStyle}
-            placeholder="499"
-          />
-          <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>Standard curriculum</span>
-        </div>
-
-        <div style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#a855f7' }}>Plus Tier</span>
-            <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: 4, background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', fontWeight: 800 }}>TIER 2</span>
-          </div>
-          <input
-            type="number"
-            required
-            value={plusPrice}
-            onChange={(e) => setPlusPrice(e.target.value)}
-            style={inputStyle}
-            placeholder="999"
-          />
-          <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>Full practice Q-bank</span>
-        </div>
-
-        <div style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b' }}>Premium Tier</span>
-            <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 800 }}>TIER 3</span>
-          </div>
-          <input
-            type="number"
-            required
-            value={premiumPrice}
-            onChange={(e) => setPremiumPrice(e.target.value)}
-            style={inputStyle}
-            placeholder="1499"
-          />
-          <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 4 }}>Full mocks & mentorship</span>
-        </div>
-      </div>
-    </div>
-
-    <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-      <input
-        type="checkbox"
-        id="course-published"
-        checked={published}
-        onChange={(e) => setPublished(e.target.checked)}
-        style={{ width: 18, height: 18 }}
-      />
-      <label htmlFor="course-published" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>
-        Published (visible to students)
-      </label>
-    </div>
-  </>
-);

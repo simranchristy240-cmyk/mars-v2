@@ -1,3 +1,4 @@
+export * from './questions';
 export type UserRole = 'student' | 'admin';
 
 export type AccessTier = 'free' | 'basic' | 'plus' | 'premium';
@@ -72,6 +73,14 @@ export interface ITopic {
   updatedAt: string;
 }
 
+export interface ILessonNoteFile {
+  filename: string;
+  originalName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+}
+
 export interface ILesson {
   _id: string;
   topicId: string;
@@ -79,6 +88,7 @@ export interface ILesson {
   title: string;
   order: number;
   accessTier?: AccessTier;
+  notesFile?: ILessonNoteFile;
   sections: string[]; // Section IDs
   createdAt: string;
   updatedAt: string;
@@ -171,6 +181,7 @@ export interface ITestAttempt {
   testId: string;
   studentId: string;
   startedAt: string;
+  deadlineAt?: string;
   submittedAt?: string;
   isAutoSubmitted: boolean;
   answers: ITestAnswer[];

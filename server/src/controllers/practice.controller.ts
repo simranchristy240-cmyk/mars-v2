@@ -1,3 +1,4 @@
+import { studentQuestion, correctAnswerIds, isAnswerCorrect } from '@mars/shared';
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { Section } from '../models/Section';
@@ -96,14 +97,7 @@ export const getPracticeQuestions = async (req: AuthenticatedRequest, res: Respo
     const questions = practiceQuestions.map((q: any) => {
       const qObj = q.toObject ? q.toObject() : { ...q };
       qObj.isLocked = !isAdmin && !canAccessTier(studentTier, qObj.accessTier || requiredTier || 'free');
-      if (!isAdmin && qObj.options) {
-        qObj.options = qObj.options.map((opt: any) => ({
-          id: opt.id,
-          text: opt.text,
-          image: opt.image,
-        }));
-      }
-      return qObj;
+      return isAdmin ? qObj : studentQuestion(qObj);
     });
 
     return res.json({
@@ -119,7 +113,8 @@ export const getPracticeQuestions = async (req: AuthenticatedRequest, res: Respo
 
 export const submitPracticeAnswer = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { questionId, selectedOptions, courseId } = req.body;
+    const { questionId, selectedOptions = [], courseId } = req.body;
+    if (!Array.isArray(selectedOptions) || selectedOptions.some((id: unknown) => typeof id !== 'string')) return res.status(400).json({ success: false, error: 'Invalid answer' });
     if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const question = await Section.findById(questionId);
@@ -140,13 +135,8 @@ export const submitPracticeAnswer = async (req: AuthenticatedRequest, res: Respo
     }
 
     // Determine correctness
-    const correctOptions = (question.options || [])
-      .filter((opt) => opt.isCorrect)
-      .map((opt) => opt.id);
-
-    const isCorrect =
-      correctOptions.length === selectedOptions.length &&
-      correctOptions.every((optId) => selectedOptions.includes(optId));
+    const correctOptions = correctAnswerIds(question);
+    const isCorrect = isAnswerCorrect(question, selectedOptions);
 
     // Update progress
     if (courseId) {

@@ -522,7 +522,8 @@ export const StudentDashboard: React.FC = () => {
                     const isOpen = (!start || now >= start) && (!end || now <= end);
                     const isLocked = !!test.isLocked;
 
-                    const status = test.hasAttempted
+                    const inProgress = test.attemptStatus === 'in-progress';
+                    const status = inProgress ? { label: 'In progress', tone: 'is-warning' } : test.hasAttempted
                       ? { label: 'Completed', tone: 'is-success' }
                       : isOpen
                       ? { label: 'Live now', tone: 'is-gold' }
@@ -569,9 +570,9 @@ export const StudentDashboard: React.FC = () => {
                             <button type="button" className="ui-btn is-block" onClick={() => openUpgrade(test.accessTier || 'basic')}>
                               <Lock size={14} /> Unlock test
                             </button>
-                          ) : isOpen ? (
+                          ) : isOpen || inProgress ? (
                             <button type="button" className="ui-btn is-primary is-block" onClick={() => navigate(`/tests/${test._id}/attempt`)}>
-                              Start test <ArrowRight size={15} />
+                              {inProgress ? 'Resume test' : 'Start test'} <ArrowRight size={15} />
                             </button>
                           ) : (
                             <button type="button" className="ui-btn is-block" disabled>

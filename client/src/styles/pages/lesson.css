@@ -6,94 +6,204 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
+  height: 100%;
+  transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ─── Header ──────────────────────────────────────────────────────────── */
-
-.les-head {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-top: 4px;
+.les-wrap.is-wide {
+  max-width: 1650px;
 }
 
-.les-head-bar {
+/* ─── Compact Single-Line Header ────────────────────────────────────── */
+
+.les-compact-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 38px;
+  width: 100%;
+  flex-shrink: 0;
 }
 
-.les-head .les-eyebrow {
+.les-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   flex: 1;
+}
+
+.les-back-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs, 8px);
+  flex-shrink: 0;
+}
+
+.les-title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
-  color: var(--ui-gold-ink);
 }
 
-.les-contents-btn {
-  margin-left: auto;
-}
-
-.les-head .les-title {
-  font-size: clamp(1.75rem, 4.2vw, 2.6rem);
-  letter-spacing: -0.035em;
-  line-height: 1.08;
-  max-width: 22ch;
-  overflow-wrap: anywhere;
-}
-
-.les-meta {
-  --gap: 10px;
-}
-
-.les-meta .ui-faint {
-  font-weight: 600;
+.les-counter-pill {
+  font-family: var(--font-family-body, inherit);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--tile-muted, rgba(9, 9, 65, 0.06));
+  color: var(--text-secondary, #44486a);
+  border: 1px solid var(--border-color, rgba(9, 9, 65, 0.1));
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Stepper ─────────────────────────────────────────────────────────── */
-
-.les-stepper {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.les-topic-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs, 6px);
+  background: var(--tile-muted, rgba(9, 9, 65, 0.05));
+  color: var(--gold-ink, #8f6a0c);
+  border: 1px solid var(--border-color, rgba(9, 9, 65, 0.09));
+  max-width: 160px;
+  flex-shrink: 0;
 }
 
-.les-steps {
+.les-single-title {
+  font-family: var(--font-family-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.les-head-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.les-head-chips .ui-chip.is-sm {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  height: 22px;
+}
+
+/* ─── Slim Stepper Line ─────────────────────────────────────────────── */
+
+.les-slim-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.les-slim-stepper .les-steps {
   flex: 1;
   display: flex;
-  gap: 5px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.les-step {
+.les-slim-stepper .les-step {
   flex: 1;
-  height: 6px;
+  height: 4px;
   border-radius: 999px;
-  background: var(--track-bg);
-  transition: background 0.4s var(--ui-ease), transform 0.4s var(--ui-ease);
+  background: var(--track-bg, rgba(9, 9, 65, 0.08));
+  transition: background 0.3s ease;
 }
 
-.les-step.is-done {
-  background: var(--accent);
+.les-slim-stepper .les-step.is-done {
+  background: var(--accent, #090941);
 }
 
-.les-step.is-current {
-  background: var(--ui-gold);
-  transform: scaleY(1.35);
+.les-slim-stepper .les-step.is-current {
+  background: var(--ui-gold, #e2ae2a);
 }
 
-.les-stepper-pct {
-  min-width: 3ch;
-  text-align: right;
-  font-family: var(--font-family-heading);
-  font-size: 0.85rem;
+.les-slim-stepper .les-stepper-pct {
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
+  min-width: 3ch;
+  text-align: right;
+}
+
+/* ─── Video Bottom Navigation Bar (Directly below video) ───────────── */
+
+.les-video-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  background: var(--ui-tile-bg, #ffffff);
+  border-top: 1px solid var(--divider, rgba(9, 9, 65, 0.08));
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.les-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.les-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.les-video-caption-text {
+  font-family: var(--font-family-heading);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.les-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 14px;
+}
+
+/* Standalone navigation for reading & question sections */
+.les-section-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--ui-tile-bg, #ffffff);
+  border: 1px solid var(--ui-tile-border, rgba(9, 9, 65, 0.09));
+  border-radius: var(--radius-md, 14px);
+  margin-top: 14px;
+  box-shadow: var(--ui-tile-shadow);
 }
 
 /* ─── Stage ───────────────────────────────────────────────────────────── */
@@ -101,22 +211,61 @@
 .les-stage {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 2px;
+  min-height: 0;
 }
 
 /* Video */
 
 .les-video-tile {
   background: var(--ui-tile-bg);
+  border-radius: var(--radius-md, 16px);
+  overflow: hidden;
+  border: 1px solid var(--ui-tile-border, rgba(9, 9, 65, 0.09));
+  box-shadow: var(--ui-tile-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .les-wrap:not(.is-wide) .les-video-tile,
+  .lesson-dual-layout.focus-video .les-video-tile {
+    max-width: min(100%, calc((100vh - 230px) * 16 / 9));
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+.les-clip-time-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--tile-muted, rgba(9, 9, 65, 0.06));
+  color: var(--text-secondary, #44486a);
+  border: 1px solid var(--border-color, rgba(9, 9, 65, 0.08));
+  flex-shrink: 0;
 }
 
 .les-video-frame {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: var(--ui-inverse-bg);
+  background: #000000;
+  width: 100%;
 }
 
+.les-vimeo-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.les-vimeo-container iframe,
 .les-video-frame iframe {
   position: absolute;
   inset: 0;
@@ -125,12 +274,374 @@
   border: 0;
 }
 
-.les-video-caption {
+/* ─── Custom MARS Video Player & Seek Bar ───────────────────────────────── */
+
+.les-custom-player {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000000;
+  user-select: none;
+  outline: none;
+}
+
+.les-custom-player.is-fullscreen {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Click catcher over iframe to toggle play/pause */
+.les-video-click-catcher {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  cursor: pointer;
+}
+
+/* Center Play Button Overlay */
+.les-center-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(9, 9, 65, 0.82);
+  border: 2px solid rgba(226, 174, 42, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
   display: flex;
   align-items: center;
+  justify-content: center;
+  z-index: 6;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.les-center-play-btn:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  background: rgba(9, 9, 65, 0.95);
+  border-color: #f59e0b;
+}
+
+.les-center-play-icon {
+  margin-left: 3px;
+  color: #ffffff;
+}
+
+/* ─── Custom Controls Bar ─────────────────────────────────────────────── */
+
+.les-custom-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 24px 16px 10px;
+  background: linear-gradient(to top, rgba(9, 9, 65, 0.96) 0%, rgba(9, 9, 65, 0.6) 65%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.les-custom-player.controls-visible .les-custom-controls,
+.les-custom-controls.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ─── Custom Seek Bar Track ───────────────────────────────────────────── */
+
+.les-seekbar-container {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.les-seekbar-track {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  transition: height 0.15s ease;
+  overflow: visible;
+}
+
+.les-seekbar-container:hover .les-seekbar-track {
+  height: 7px;
+}
+
+.les-seekbar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f59e0b, #e2ae2a);
+  pointer-events: none;
+}
+
+.les-seekbar-hover-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  pointer-events: none;
+}
+
+.les-seekbar-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #e2ae2a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.les-seekbar-container:hover .les-seekbar-thumb,
+.les-seekbar-thumb.is-dragging {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.les-seekbar-tooltip {
+  position: absolute;
+  bottom: 22px;
+  transform: translateX(-50%);
+  background: rgba(9, 9, 65, 0.95);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(226, 174, 42, 0.5);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Controls Row ────────────────────────────────────────────────────── */
+
+.les-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px;
-  border-top: 1px solid var(--divider);
+  min-height: 36px;
+}
+
+.les-controls-left,
+.les-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.les-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  padding: 0;
+}
+
+.les-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #e2ae2a;
+}
+
+.les-ctrl-btn:active {
+  transform: scale(0.94);
+}
+
+.les-skip-btn {
+  position: relative;
+}
+
+.les-skip-label {
+  position: absolute;
+  font-size: 0.5rem;
+  font-weight: 800;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%);
+  font-family: inherit;
+  color: #ffffff;
+}
+
+.les-ctrl-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+}
+
+.les-time-divider {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
+}
+
+.les-time-total {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Volume Slider Group */
+.les-volume-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.les-vol-slider-wrap {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+}
+
+.les-volume-group:hover .les-vol-slider-wrap,
+.les-vol-slider-wrap:focus-within {
+  width: 64px;
+}
+
+.les-vol-slider {
+  width: 60px;
+  height: 4px;
+  accent-color: #e2ae2a;
+  cursor: pointer;
+}
+
+/* Speed Dropdown Menu */
+.les-speed-wrapper {
+  position: relative;
+}
+
+.les-speed-btn {
+  gap: 3px;
+  width: auto;
+  padding: 0 6px;
+}
+
+.les-speed-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.les-speed-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: rgba(9, 9, 65, 0.95);
+  border: 1px solid rgba(226, 174, 42, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 68px;
+  z-index: 20;
+}
+
+.les-speed-option {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.les-speed-option:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #e2ae2a;
+}
+
+.les-speed-option.is-active {
+  background: var(--ui-gold, #e2ae2a);
+  color: #090941;
+  font-weight: 800;
+}
+
+/* Clip Finished Overlay */
+.les-clip-finished-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 9, 65, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 20px;
+}
+
+.les-clip-finished-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--ui-tile-bg, #ffffff);
+  padding: 22px 26px;
+  border-radius: var(--radius-md, 16px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  max-width: 360px;
+  gap: 10px;
+}
+
+.les-clip-finished-title {
+  margin: 0;
+  font-family: var(--font-family-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.les-clip-finished-desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
 }
 
 /* Reading */

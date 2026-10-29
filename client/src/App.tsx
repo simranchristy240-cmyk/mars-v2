@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -19,6 +19,7 @@ import { TestReport } from './pages/student/TestReport';
 import { Reports } from './pages/student/Reports';
 import { Achievements } from './pages/student/Achievements';
 import { Profile } from './pages/student/Profile';
+import { Pricing } from './pages/student/Pricing';
 
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { CourseBuilder } from './pages/admin/CourseBuilder';
@@ -34,9 +35,13 @@ const queryClient = new QueryClient({
 
 const StudentRoute: React.FC = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin') return <Navigate to="/admin" replace />;
+  // Admins are allowed to preview lessons, but redirected to /admin from other student pages
+  if (user.role === 'admin' && !location.pathname.startsWith('/lesson/')) {
+    return <Navigate to="/admin" replace />;
+  }
   return (
     <AppLayout>
       <Outlet />
@@ -99,6 +104,8 @@ export const App: React.FC = () => {
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Profile />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/upgrade" element={<Pricing />} />
               </Route>
 
               <Route element={<AdminRoute />}>

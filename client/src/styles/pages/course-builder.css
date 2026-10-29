@@ -1,0 +1,234 @@
+/* MARS Course & Chapter Builder — Student Parity Authoring Styles */
+
+.cb-author-top-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--tile-bg, rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color, rgba(9, 9, 65, 0.08));
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  font-size: 0.82rem;
+}
+
+.cb-author-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 999px);
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cb-author-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6366f1;
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.6);
+  animation: cb-pulse 2s infinite ease-in-out;
+}
+
+@keyframes cb-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.cb-author-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Inline Edit Badges overlaid cleanly on student elements */
+.cb-tile-wrapper {
+  position: relative;
+}
+
+.cb-hover-action-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  font-size: 0.76rem;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.88;
+}
+
+.cb-hover-action-badge:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  background: var(--bg-secondary);
+  border-color: var(--primary, #6366f1);
+  color: var(--primary, #6366f1);
+}
+
+.cb-section-admin-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--tile-muted, rgba(9, 9, 65, 0.03));
+  border: 1px dashed var(--border-color, rgba(9, 9, 65, 0.15));
+  border-radius: var(--radius-md, 14px);
+  margin-top: 12px;
+}
+
+/* Modals */
+.cb-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.cb-modal {
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  background: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  border-radius: var(--radius-lg, 24px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cb-modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cb-modal-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.cb-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+}
+
+.cb-modal-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.cb-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cb-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+}
+
+/* Chapter & Course Overview Cards */
+.cb-overview-card {
+  background: var(--tile-bg, #ffffff);
+  border: 1px solid var(--border-color, rgba(9, 9, 65, 0.08));
+  border-radius: var(--radius-lg, 24px);
+  padding: 28px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.cb-overview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cb-overview-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--text-primary);
+}
+
+.cb-overview-desc {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.cb-syllabus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.cb-syllabus-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: var(--radius-md, 16px);
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cb-syllabus-item:hover {
+  background: var(--tile-hover, rgba(99, 102, 241, 0.04));
+  border-color: var(--primary, #6366f1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.cb-notes-dropzone {
+  border: 2px dashed var(--border-color, rgba(0, 0, 0, 0.15));
+  border-radius: var(--radius-md, 16px);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.01));
+}
+
+.cb-notes-dropzone:hover {
+  border-color: var(--primary, #6366f1);
+  background: rgba(99, 102, 241, 0.02);
+}

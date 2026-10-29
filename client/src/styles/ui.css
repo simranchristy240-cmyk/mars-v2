@@ -1022,3 +1022,10 @@ button.ui-tile:hover {
     animation: none;
   }
 }
+
+.question-answers { border: 0; padding: 0; margin: 16px 0; min-width: 0; display: grid; gap: 12px; }
+.question-answers legend { margin-bottom: 12px; color: var(--text-secondary); font-size: 0.95rem; }
+.question-answers .ui-option { cursor: pointer; min-height: 48px; flex-wrap: wrap; }
+.question-answers input { accent-color: var(--accent); width: 20px; height: 20px; flex-shrink: 0; }
+.question-answers select { max-width: 100%; min-height: 44px; }
+.question-answers .ui-option:focus-within, .question-answers select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

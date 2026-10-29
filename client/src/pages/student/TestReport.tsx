@@ -1,5 +1,7 @@
+import { isAnswerCorrect as gradeAnswer, correctAnswerIds } from '@mars/shared';
+import { QuestionAnswer } from '../../components/QuestionAnswer';
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import { Trophy, CheckCircle, XCircle, Clock, ArrowLeft, BarChart2, MinusCircle, Home, FileSearch } from 'lucide-react';
@@ -8,13 +10,7 @@ import { HtmlContent } from '../../components/RichTextEditor';
 import { EmptyState, ProgressBar, ProgressRing } from '../../components/ui';
 import '../../styles/pages/tests.css';
 
-const isAnswerCorrect = (q: any, ans: any) => {
-  const correctOpts = (q.options || []).filter((o: any) => o.isCorrect).map((o: any) => o.id);
-  return (
-    correctOpts.length === (ans.selectedOptions || []).length &&
-    correctOpts.every((id: string) => (ans.selectedOptions || []).includes(id))
-  );
-};
+const isAnswerCorrect = (q: any, ans: any) => gradeAnswer(q, ans.selectedOptions || []);
 
 const getCheer = (pct: number) => {
   if (pct >= 80) return { lead: 'Outstanding!', text: 'You nailed this one.' };
@@ -33,6 +29,7 @@ const formatDuration = (ms: number) => {
 export const TestReport: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { state } = useLocation();
 
   const { data, isLoading } = useQuery({
     queryKey: ['test-report', id],
@@ -127,6 +124,7 @@ export const TestReport: React.FC = () => {
 
   return (
     <StudentPageShell>
+      {state?.notice && <div className="ui-callout is-warning" role="status">{state.notice}</div>}
       <div className="tst-topbar">
         <button type="button" className="ui-btn is-ghost is-sm tst-back" onClick={() => navigate('/reports')}>
           <ArrowLeft size={16} /> Back to reports
@@ -287,23 +285,9 @@ export const TestReport: React.FC = () => {
               </div>
 
               <HtmlContent as="div" html={q.questionText} className="tst-review-text" />
+              {q.questionImage && <img src={q.questionImage} alt="Question diagram" className="tst-question-image" />}
 
-              <div className="tst-review-options">
-                {q.options?.map((opt: any) => {
-                  const wasSelected = ans.selectedOptions?.includes(opt.id);
-                  const isOptCorrect = opt.isCorrect;
-                  const state = isOptCorrect ? ' is-correct' : wasSelected ? ' is-wrong' : '';
-
-                  return (
-                    <div key={opt.id} className={`ui-option tst-review-option${state}`}>
-                      <span className="ui-option-key">{opt.id.toUpperCase()}</span>
-                      <HtmlContent html={opt.text} className="ui-grow" />
-                      {isOptCorrect && <span className="tst-review-tag">{wasSelected ? 'Your answer · Correct' : 'Correct answer'}</span>}
-                      {wasSelected && !isOptCorrect && <span className="tst-review-tag">Your choice</span>}
-                    </div>
-                  );
-                })}
-              </div>
+              <QuestionAnswer question={q} value={ans.selectedOptions || []} correctIds={correctAnswerIds(q)} />
 
               {q.explanation && (
                 <div className="ui-callout tst-review-explanation">

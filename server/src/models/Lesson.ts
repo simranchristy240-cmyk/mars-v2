@@ -7,6 +7,13 @@ export interface ILessonDocument extends Document {
   order: number;
   accessTier: 'free' | 'basic' | 'plus' | 'premium';
   isPublished: boolean;
+  notesFile?: {
+    filename: string;
+    originalName: string;
+    fileSize: number;
+    mimeType: string;
+    uploadedAt: Date;
+  };
   sections: Schema.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -24,6 +31,13 @@ const LessonSchema = new Schema<ILessonDocument>(
       default: 'free',
     },
     isPublished: { type: Boolean, default: true },
+    notesFile: {
+      filename: { type: String },
+      originalName: { type: String },
+      fileSize: { type: Number },
+      mimeType: { type: String },
+      uploadedAt: { type: Date },
+    },
     sections: [{ type: Schema.Types.ObjectId, ref: 'Section' }],
   },
   { timestamps: true }

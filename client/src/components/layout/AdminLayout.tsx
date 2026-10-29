@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { AmbientBackground } from './AmbientBackground';
 import { useAuth } from '../../contexts/AuthContext';
 import { BookOpen, LayoutDashboard, LogOut, PlusCircle } from 'lucide-react';
@@ -7,6 +7,8 @@ import { BookOpen, LayoutDashboard, LogOut, PlusCircle } from 'lucide-react';
 export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isBuilder = location.pathname.startsWith('/admin/builder');
 
   const handleLogout = () => {
     logout();
@@ -109,7 +111,17 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
           </div>
         </header>
 
-        <main style={{ flex: 1, padding: '28px 32px 48px', maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+        <main
+          style={{
+            flex: 1,
+            padding: isBuilder ? 0 : '24px 32px 48px',
+            maxWidth: isBuilder ? '100%' : '1540px',
+            width: '100%',
+            margin: isBuilder ? 0 : '0 auto',
+            height: isBuilder ? 'calc(100vh - 57px)' : undefined,
+            overflow: isBuilder ? 'hidden' : undefined,
+          }}
+        >
           {children}
         </main>
       </div>

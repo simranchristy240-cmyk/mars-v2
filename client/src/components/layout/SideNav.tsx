@@ -5,7 +5,6 @@ import { Compass, BarChart3, Trophy, Settings, LogOut, Shield, ChevronDown, Spar
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { GoalSelectionModal } from '../GoalSelectionModal';
-import { TierUpgradeModal } from '../TierUpgradeModal';
 
 interface SideNavProps {
   className?: string;
@@ -16,7 +15,6 @@ export const SideNav: React.FC<SideNavProps> = ({ className = '' }) => {
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [goalModalOpen, setGoalModalOpen] = useState(false);
-  const [tierModalOpen, setTierModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: myCourseRes } = useQuery({
@@ -155,7 +153,7 @@ export const SideNav: React.FC<SideNavProps> = ({ className = '' }) => {
 
           {activeCourse && studentTier !== 'premium' && (
             <button
-              onClick={() => setTierModalOpen(true)}
+              onClick={() => navigate('/pricing')}
               style={{
                 marginTop: '4px',
                 padding: '6px 10px',
@@ -339,15 +337,6 @@ export const SideNav: React.FC<SideNavProps> = ({ className = '' }) => {
           isOpen={true}
           onClose={() => setGoalModalOpen(false)}
           mandatory={false}
-        />
-      )}
-
-      {tierModalOpen && activeCourse && (
-        <TierUpgradeModal
-          isOpen={true}
-          onClose={() => setTierModalOpen(false)}
-          course={activeCourse}
-          currentTier={studentTier}
         />
       )}
     </aside>

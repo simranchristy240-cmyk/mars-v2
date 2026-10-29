@@ -19,7 +19,7 @@ export const TestLobby: React.FC = () => {
     enabled: !!courseId,
   });
 
-  const tests = data?.data?.data || [];
+  const tests = (data?.data?.data || []).map((test: any) => ({ ...test, hasAttempted: ['submitted', 'auto-submitted'].includes(test.attemptStatus), inProgress: test.attemptStatus === 'in-progress' }));
 
   const now = new Date();
   const liveCount = tests.filter(
@@ -79,7 +79,7 @@ export const TestLobby: React.FC = () => {
             const isExpired = now > end;
             const isOpen = now >= start && now <= end;
 
-            const status = test.hasAttempted
+            const status = test.inProgress ? { label: 'In progress', tone: 'is-warning' } : test.hasAttempted
               ? { label: 'Completed', tone: 'is-success' }
               : isOpen
               ? { label: 'Live now', tone: 'is-gold' }
@@ -150,14 +150,14 @@ export const TestLobby: React.FC = () => {
                       type="button"
                       className={`ui-btn is-block ${isOpen ? 'is-primary' : ''}`}
                       onClick={() => {
-                        if (isOpen) navigate(`/tests/${test._id}/attempt`);
+                        if (isOpen || test.inProgress) navigate(`/tests/${test._id}/attempt`);
                         else alert('Test is not currently in the open schedule window.');
                       }}
-                      disabled={!isOpen}
+                      disabled={!isOpen && !test.inProgress}
                     >
-                      {isOpen ? (
+                      {(isOpen || test.inProgress) ? (
                         <>
-                          Start test <ArrowRight size={15} />
+                          {test.inProgress ? 'Resume test' : 'Start test'} <ArrowRight size={15} />
                         </>
                       ) : isUpcoming ? (
                         <>

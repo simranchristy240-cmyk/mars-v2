@@ -139,6 +139,13 @@ const seedDatabase = async () => {
     order: 1,
     accessTier: 'free',
     isPublished: true,
+    notesFile: {
+      filename: 'sample-scapula-notes.pdf',
+      originalName: 'Scapula_Anatomy_HighYield_Notes.pdf',
+      fileSize: 720,
+      mimeType: 'application/pdf',
+      uploadedAt: new Date(),
+    },
   });
 
   const sec1_1 = await Section.create({

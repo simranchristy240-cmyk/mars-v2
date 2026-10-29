@@ -91,20 +91,29 @@
 .cs-ring-label {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
   font-family: var(--font-family-heading);
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
-.cs-ring-label small {
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-left: 1px;
+.cs-ring-num {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.cs-ring-pct {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1;
+  margin-top: -3px;
 }
 
 .cs-hero-text {
@@ -449,19 +458,21 @@
   background: color-mix(in srgb, var(--success) 45%, transparent);
 }
 
-.cs-lesson button {
+.cs-lesson > .cs-lesson-btn,
+.cs-lesson-row > .cs-lesson-btn {
   width: 100%;
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 8px 10px;
+  padding: 8px 34px 8px 10px;
   border-radius: 12px;
   text-align: left;
   color: var(--text-secondary);
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.cs-lesson button:hover {
+.cs-lesson > .cs-lesson-btn:hover,
+.cs-lesson-row > .cs-lesson-btn:hover {
   background: var(--bg-card);
   color: var(--text-primary);
 }
@@ -523,7 +534,8 @@
   color: var(--text-muted);
 }
 
-.cs-lesson.is-active button {
+.cs-lesson.is-active > .cs-lesson-btn,
+.cs-lesson-row .cs-lesson-btn.is-active {
   background: var(--bg-card);
   color: var(--text-primary);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 6%, transparent),
@@ -677,3 +689,205 @@
     animation: none;
   }
 }
+
+/* Admin inline edit actions */
+.cs-hero-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--track-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.cs-hero-edit-btn:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+.cs-icon-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+.cs-icon-edit-btn:hover {
+  background: var(--track-bg);
+  color: var(--text-primary);
+}
+.cs-icon-edit-btn.is-add:hover {
+  color: var(--accent);
+}
+
+.cs-topic-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 4px;
+}
+
+.cs-lesson-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.cs-lesson-row .cs-lesson-btn,
+.cs-lesson-row .cs-drill {
+  flex: 1;
+  min-width: 0;
+}
+.cs-lesson-row .cs-drill {
+  padding-right: 36px;
+}
+.cs-lesson-row .cs-row-edit-btn {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.cs-row-edit-btn {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-card) !important;
+  color: var(--text-muted) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  cursor: pointer;
+  z-index: 5;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast), color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+}
+.cs-lesson:hover .cs-row-edit-btn,
+.cs-lesson.is-active .cs-row-edit-btn,
+.cs-lesson-row:hover .cs-row-edit-btn {
+  opacity: 1;
+}
+.cs-row-edit-btn:hover {
+  background: var(--accent) !important;
+  color: var(--on-accent, #fff) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Row Action Toolbar (Move Up, Move Down, Move Modal, Edit) */
+.cs-row-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  background: var(--bg-card);
+  padding: 2px 3px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-color);
+}
+
+.cs-lesson:hover .cs-row-actions,
+.cs-lesson.is-active .cs-row-actions,
+.cs-lesson-row:hover .cs-row-actions {
+  opacity: 1;
+}
+
+.cs-row-act-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cs-row-act-btn:hover {
+  background: var(--track-bg);
+  color: var(--text-primary);
+}
+
+.cs-row-act-btn.is-edit:hover {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+
+.cs-tests-section {
+  padding: 10px 4px 4px;
+  margin-top: 6px;
+  border-top: 1px solid var(--divider);
+}
+.cs-tests-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  padding: 4px 8px 8px;
+}
+.cs-test-btn.is-active {
+  background: var(--bg-card);
+  color: var(--accent);
+}
+
+.cs-admin-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--divider);
+  display: flex;
+  gap: 8px;
+  background: var(--bg-card);
+}
+.cs-admin-add-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px dashed var(--border-color);
+  background: var(--track-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.cs-admin-add-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--cs-tint);
+}
+

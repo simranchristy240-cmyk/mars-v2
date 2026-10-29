@@ -22,7 +22,7 @@ export const connectDB = async (): Promise<void> => {
   ensureDnsForAtlas();
   let attempt = 0;
 
-  // Keep retrying so Render stays up while Atlas IP allowlists propagate.
+  // Keep retrying in the background while database connection establishes.
   while (true) {
     attempt += 1;
     try {

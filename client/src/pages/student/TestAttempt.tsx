@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { PendingTestAnswer, savePendingAnswers } from '../../services/answerQueue';
+import { QuestionAnswer } from '../../components/QuestionAnswer';
+import { useAuth } from '../../contexts/AuthContext';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
@@ -11,110 +14,167 @@ export const TestAttempt: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const { user } = useAuth();
   const [testData, setTestData] = useState<any>(null);
-  const [currentSectionIdx, setCurrentSectionIdx] = useState(0);
   const [currentQIdx, setCurrentQIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
-  const [timeLeftSeconds, setTimeLeftSeconds] = useState<number>(0);
+  const [timeLeftSeconds, setTimeLeftSeconds] = useState(0);
   const [showNavGrid, setShowNavGrid] = useState(false);
+  const [status, setStatus] = useState('Loading test...');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [review, setReview] = useState(false);
+  const [loadVersion, setLoadVersion] = useState(0);
+  const pending = useRef<Record<string, PendingTestAnswer>>({});
+  const saving = useRef<Promise<boolean> | null>(null);
+  const submittingRef = useRef(false);
+  const deadline = useRef(0);
+  const ready = useRef(false);
+  const reviewDialog = useRef<HTMLDivElement>(null);
+  const storageKey = `mars-test-pending:${user?._id}:${id}`;
+  const persist = useCallback(() => {
+    try { localStorage.setItem(storageKey, JSON.stringify(pending.current)); }
+    catch { setError('Browser storage is unavailable. Keep this tab open until all answers are saved.'); }
+  }, [storageKey]);
 
-  useEffect(() => {
-    const fetchStart = async () => {
+  const flush = useCallback((): Promise<boolean> => {
+    if (saving.current) return saving.current;
+    const run = async () => {
       try {
-        const res = await api.post(`/tests/${id}/start`);
-        const { test, attempt } = res.data.data;
-        setTestData(test);
-        setTimeLeftSeconds(test.duration * 60);
-
-        // Populate existing answers if resuming
-        const ansMap: Record<string, string[]> = {};
-        const flagMap: Record<string, boolean> = {};
-        attempt.answers?.forEach((a: any) => {
-          ansMap[a.questionId] = a.selectedOptions || [];
-          if (a.isMarkedForReview) flagMap[a.questionId] = true;
-        });
-        setAnswers(ansMap);
-        setFlagged(flagMap);
+        if (Object.keys(pending.current).length) setStatus('Saving answers...');
+        await savePendingAnswers(pending.current, answer => api.put(`/tests/${id}/answer`, answer, { timeout: 10000 }), persist);
+        setStatus('All answers saved');
+        return true;
       } catch (err: any) {
-        alert(err.response?.data?.error || 'Failed to start test attempt');
-        navigate(-1);
+        setStatus(err.response?.data?.expired ? 'Time ended. Unsaved changes could not be accepted.' : 'Answers not saved. Retrying automatically...');
+        return false;
       }
     };
+    saving.current = run().finally(() => { saving.current = null; });
+    return saving.current;
+  }, [id, persist]);
 
-    if (id) fetchStart();
-  }, [id]);
-
-  // Timer Countdown
-  useEffect(() => {
-    if (timeLeftSeconds <= 0) return;
-    const timer = setInterval(() => {
-      setTimeLeftSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleFinalSubmit(true); // Auto-submit when time runs out
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [timeLeftSeconds]);
-
-  if (!testData) {
-    return (
-      <div className="tst-exam-loading" aria-busy="true">
-        <span className="ui-icon-box tst-exam-loading-icon" style={{ ['--size' as string]: '56px' }}>
-          <Clock size={24} />
-        </span>
-        <p className="ui-muted">Loading test environment…</p>
-      </div>
-    );
-  }
-
-  const currentSection = testData.sections[currentSectionIdx];
-  const allQuestions = currentSection?.questions || [];
-  const currentQ = allQuestions[currentQIdx];
-
-  const handleSelectOption = (optId: string) => {
-    if (!currentQ) return;
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQ._id]: [optId],
-    }));
-
-    // Auto-save answer to server
-    api.put(`/tests/${id}/answer`, {
-      questionId: currentQ._id,
-      selectedOptions: [optId],
-      isMarkedForReview: !!flagged[currentQ._id],
-    });
-  };
-
-  const toggleFlag = () => {
-    if (!currentQ) return;
-    const newFlagged = !flagged[currentQ._id];
-    setFlagged((prev) => ({ ...prev, [currentQ._id]: newFlagged }));
-
-    api.put(`/tests/${id}/answer`, {
-      questionId: currentQ._id,
-      selectedOptions: answers[currentQ._id] || [],
-      isMarkedForReview: newFlagged,
-    });
-  };
-
-  const handleFinalSubmit = async (isAuto = false) => {
-    const confirmSub = isAuto || window.confirm('Are you sure you want to submit your test attempt?');
-    if (confirmSub) {
-      try {
-        await api.post(`/tests/${id}/submit`, { isAutoSubmitted: isAuto });
-        alert(isAuto ? 'Time expired! Test auto-submitted.' : 'Test submitted successfully!');
-        navigate(`/tests/${id}/report`);
-      } catch (err: any) {
-        alert(err.response?.data?.error || 'Error submitting test');
+  const submit = useCallback(async (auto = false) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    setError('');
+    try {
+      const saved = await flush();
+      if (!saved && !auto) {
+        setError('Some answers are not saved. Reconnect and retry before submitting.');
+        return;
       }
+      await api.post(`/tests/${id}/submit`, {}, { timeout: 15000 });
+
+      try { localStorage.removeItem(storageKey); } catch { /* Submission is already saved on the server. */ }
+      navigate(`/tests/${id}/report`, { replace: true, state: !saved ? { notice: 'Time ended. Only answers received by the server before the deadline were included.' } : undefined });
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Submission failed. Reconnect and retry; your pending answers remain on this device.');
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
+  }, [flush, id, navigate, storageKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    ready.current = false;
+    const load = async () => {
+      try {
+        const res = await api.post(`/tests/${id}/start`, {}, { timeout: 15000 });
+        if (cancelled) return;
+        const { test, attempt, deadline: endsAt, serverNow } = res.data.data;
+        if (attempt.status !== 'in-progress') {
+          let hasPending = false;
+          try { hasPending = Object.keys(JSON.parse(localStorage.getItem(storageKey) || '{}')).length > 0; localStorage.removeItem(storageKey); } catch { /* Storage unavailable. */ }
+          navigate(`/tests/${id}/report`, { replace: true, state: hasPending ? { notice: 'This test has ended. Pending changes on this device were not included; only answers already saved on the server were graded.' } : undefined });
+          return;
+        }
+        const restored: Record<string, string[]> = {};
+        const flags: Record<string, boolean> = {};
+        attempt.answers?.forEach((answer: any) => {
+          restored[answer.questionId] = answer.selectedOptions || [];
+          flags[answer.questionId] = !!answer.isMarkedForReview;
+        });
+        try { pending.current = JSON.parse(localStorage.getItem(storageKey) || '{}'); }
+        catch { pending.current = {}; }
+        for (const answer of Object.values(pending.current)) {
+          restored[answer.questionId] = answer.selectedOptions;
+          flags[answer.questionId] = answer.isMarkedForReview;
+        }
+        deadline.current = performance.now() + Math.max(0, Date.parse(endsAt) - Date.parse(serverNow));
+        setTimeLeftSeconds(Math.max(0, Math.ceil((deadline.current - performance.now()) / 1000)));
+        setTestData(test);
+        setAnswers(restored);
+        setFlagged(flags);
+        setError('');
+        ready.current = true;
+        void flush();
+      } catch (err: any) {
+        if (!cancelled) setError(err.response?.data?.error || 'Unable to load the test. Check your connection and retry.');
+      }
+    };
+    void load();
+    return () => { cancelled = true; ready.current = false; };
+  }, [id, storageKey, loadVersion, flush, navigate]);
+
+  useEffect(() => {
+    let autoAttempted = false;
+    const timer = window.setInterval(() => {
+      if (!ready.current) return;
+      const left = Math.max(0, Math.ceil((deadline.current - performance.now()) / 1000));
+      setTimeLeftSeconds(left);
+      if (!left && !autoAttempted) { autoAttempted = true; void submit(true); }
+    }, 250);
+    const retry = () => { if (ready.current) { if (deadline.current > performance.now()) void flush(); else void submit(true); } };
+    const retries = window.setInterval(retry, 5000);
+    window.addEventListener('online', retry);
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (Object.keys(pending.current).length) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => { clearInterval(timer); clearInterval(retries); window.removeEventListener('online', retry); window.removeEventListener('beforeunload', beforeUnload); };
+  }, [flush, submit, loadVersion]);
+
+  useEffect(() => {
+    if (!review) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = reviewDialog.current;
+    dialog?.querySelector<HTMLButtonElement>('button')?.focus();
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !submittingRef.current) { event.preventDefault(); setReview(false); }
+      if (event.key !== 'Tab') return;
+      const controls = dialog?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+      if (!controls?.length) { event.preventDefault(); return; }
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', trapFocus);
+    return () => { document.removeEventListener('keydown', trapFocus); previous?.focus(); };
+  }, [review]);
+
+  if (!testData) return <div className="tst-exam-loading" role="status">
+    <p>{error || 'Loading test environment...'}</p>
+    {error && <button className="ui-btn is-primary" onClick={() => setLoadVersion(v => v + 1)}>Retry loading</button>}
+  </div>;
+
+  const allQuestions = testData.sections.flatMap((section: any) => (section.questions || []).map((question: any) => ({ ...question, sectionName: section.name })));
+  const currentQ = allQuestions[currentQIdx];
+  const queueAnswer = (selectedOptions: string[], isMarkedForReview: boolean) => {
+    if (!currentQ || submittingRef.current || performance.now() >= deadline.current) return;
+    const answer = { questionId: currentQ._id, selectedOptions, isMarkedForReview };
+    pending.current[currentQ._id] = answer;
+    persist();
+    setAnswers(prev => ({ ...prev, [currentQ._id]: selectedOptions }));
+    setFlagged(prev => ({ ...prev, [currentQ._id]: isMarkedForReview }));
+    void flush();
   };
+  const toggleFlag = () => queueAnswer(answers[currentQ._id] || [], !flagged[currentQ._id]);
+  const handleFinalSubmit = (auto = false) => auto ? void submit(true) : setReview(true);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -138,7 +198,7 @@ export const TestAttempt: React.FC = () => {
           <div className="ui-grow tst-exam-heading">
             <h1 className="tst-exam-title ui-truncate">{testData.title}</h1>
             <div className="ui-faint ui-truncate">
-              Section {currentSectionIdx + 1} · {currentSection?.name}
+              {currentQ?.sectionName}
             </div>
           </div>
 
@@ -166,6 +226,17 @@ export const TestAttempt: React.FC = () => {
         </div>
       </header>
 
+      <div className="ui-callout" role="status">{status}
+        <button type="button" className="ui-btn is-ghost is-sm" disabled={submitting} onClick={() => timeLeftSeconds <= 0 ? void submit(true) : void flush()}>Retry {timeLeftSeconds <= 0 ? 'submission' : 'saving'}</button>
+      </div>
+      {error && <div className="ui-callout is-danger" role="alert">{error}</div>}
+      {review && <div className="ui-modal-backdrop"><div ref={reviewDialog} className="ui-modal" role="dialog" aria-modal="true" aria-labelledby="submit-title" style={{ padding: 24 }}>
+        <h2 id="submit-title">Submit your test?</h2>
+        <p>{answeredCount} answered / {allQuestions.length - answeredCount} unanswered / {flaggedCount} marked for review across all sections.</p>
+        <p>You cannot change answers after submission.</p>
+        <button autoFocus type="button" className="ui-btn is-outline" disabled={submitting} onClick={() => setReview(false)}>Continue reviewing</button>
+        <button type="button" className="ui-btn is-primary" disabled={submitting} onClick={() => void submit(timeLeftSeconds <= 0)}>{submitting ? 'Submitting...' : 'Confirm submission'}</button>
+      </div></div>}
       <div className="tst-exam-body">
         <main className="tst-exam-main">
           {currentQ ? (
@@ -204,24 +275,9 @@ export const TestAttempt: React.FC = () => {
 
                 {currentQ.questionImage && <img src={currentQ.questionImage} alt="Diagram" className="tst-question-image" />}
 
-                <div className="tst-options" role="radiogroup">
-                  {currentQ.options?.map((opt: any) => {
-                    const isSelected = answers[currentQ._id]?.includes(opt.id);
-                    return (
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={!!isSelected}
-                        key={opt.id}
-                        className={`ui-option${isSelected ? ' is-selected' : ''}`}
-                        onClick={() => handleSelectOption(opt.id)}
-                      >
-                        <span className="ui-option-key">{opt.id.toUpperCase()}</span>
-                        <HtmlContent html={opt.text} className="ui-grow" />
-                      </button>
-                    );
-                  })}
-                </div>
+                <QuestionAnswer question={currentQ} value={answers[currentQ._id] || []}
+                  onChange={value => queueAnswer(value, !!flagged[currentQ._id])} disabled={submitting || timeLeftSeconds <= 0} />
+                <button type="button" className="ui-btn is-ghost" disabled={submitting || timeLeftSeconds <= 0} onClick={() => queueAnswer([], !!flagged[currentQ._id])}>Clear answer</button>
 
                 <div className="tst-q-nav">
                   <button

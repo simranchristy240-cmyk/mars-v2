@@ -1,8 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  resolve: {
+    alias: { '@mars/shared': fileURLToPath(new URL('../shared/src/index.ts', import.meta.url)) },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -31,6 +35,18 @@ export default defineConfig({
       },
     }),
   ],
+  esbuild: {
+    target: 'esnext',
+  },
+  build: {
+    target: 'esnext',
+  },
+  optimizeDeps: {
+    include: ['pdfjs-dist'],
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
   server: {
     port: 5174,
     strictPort: false,
