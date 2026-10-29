@@ -60,10 +60,10 @@ export const Profile: React.FC = () => {
   const contact = user?.email || user?.phone || 'Authenticated Account';
   const displayName = user?.name || 'Student';
   const initials = displayName
-    .split(' ')
+    .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
+    .map((part: string) => part[0]?.toUpperCase() ?? '')
     .join('');
   const activeTheme = themes.find((t) => t.id === theme);
   const isAdmin = user?.role === 'admin';
